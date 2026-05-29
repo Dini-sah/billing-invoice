@@ -32,3 +32,34 @@ body {
   background: #bbf7d0;
   color: #052e16;
 }
+
+.invoice-print-only {
+  display: none;
+}
+
+@media print {
+  body.printing-invoice #root > div > *:not(.invoice-print-only) {
+    display: none !important;
+  }
+
+  body.printing-invoice #root,
+  body.printing-invoice #root > div {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-invoice .invoice-print-only {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+
+  body.printing-invoice {
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+}

@@ -42,7 +42,8 @@ export const saveInvoice = saveInvoiceToGoogleSheets;
 
 export const updateInvoiceStatus = async (
   invoiceId: string,
-  status: 'pending' | 'paid'
+  status: 'pending' | 'paid',
+  paymentMethod?: string
 ): Promise<GoogleSheetsResponse> => {
   try {
     const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -52,7 +53,7 @@ export const updateInvoiceStatus = async (
       },
       body: JSON.stringify({
         action: 'updateStatus',
-        data: { invoiceId, status }
+        data: { invoiceId, status, paymentMethod }
       })
     });
     const data = await response.json().catch(() => null);

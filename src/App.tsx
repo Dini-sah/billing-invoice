@@ -35,12 +35,15 @@ function App() {
     setToast({ message, type });
   };
 
-  const handleMarkPaid = async (invoiceId: string) => {
-    const result = await updateInvoiceStatus(invoiceId, "paid");
+  const handleMarkPaid = async (
+    invoiceId: string,
+    paymentMethod: Invoice["paymentMethod"]
+  ) => {
+    const result = await updateInvoiceStatus(invoiceId, "paid", paymentMethod);
     if (result.success) {
       setSelectedInvoice((current) =>
         current && current.id === invoiceId
-          ? { ...current, status: "paid" }
+          ? { ...current, status: "paid", paymentMethod }
           : current
       );
       showToast("Invoice marked as paid", "success");

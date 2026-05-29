@@ -15,6 +15,7 @@ export interface Invoice {
   date: string;
   createdAt?: string;
   type: 'sale' | 'service' | 'sale & service';
+  paymentMethod?: 'cash' | 'gpay' | 'card' | 'bank transfer' | 'other';
   items: InvoiceItem[];
   subtotal: number;
   taxTotal: number;

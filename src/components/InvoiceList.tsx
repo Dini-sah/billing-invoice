@@ -169,6 +169,11 @@ export const InvoiceList = ({
                     >
                       {invoice.status}
                     </span>
+                    {invoice.status === "paid" && (
+                      <span className="px-2 py-1 rounded bg-gray-100 text-xs font-medium text-gray-700 capitalize">
+                        {invoice.paymentMethod || "not recorded"}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">

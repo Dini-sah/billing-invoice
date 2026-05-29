@@ -1,7 +1,14 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 import { Invoice } from "../types/invoice";
 import { Button } from "../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { X, Printer, FileText, User, Download } from "lucide-react";
 import { formatDateTime } from "../utils/date";
 import HELogoBlack from "../assets/images/HElogoBlack.webp";
@@ -9,7 +16,10 @@ import HELogoBlack from "../assets/images/HElogoBlack.webp";
 interface InvoiceDetailModalProps {
   invoice: Invoice | null;
   onClose: () => void;
-  onMarkPaid: (invoiceId: string) => void;
+  onMarkPaid: (
+    invoiceId: string,
+    paymentMethod: Invoice["paymentMethod"]
+  ) => void;
 }
 
 export const InvoiceDetailModal = ({
@@ -21,6 +31,12 @@ export const InvoiceDetailModal = ({
 
   const pdfRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [paymentMethod, setPaymentMethod] =
+    useState<NonNullable<Invoice["paymentMethod"]>>("cash");
+
+  useEffect(() => {
+    setPaymentMethod(invoice.paymentMethod || "cash");
+  }, [invoice.id, invoice.paymentMethod]);
 
   const handlePrint = () => {
     window.print();
@@ -100,6 +116,12 @@ export const InvoiceDetailModal = ({
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <p className="font-semibold capitalize">{invoice.status}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Payment Method</p>
+              <p className="font-semibold capitalize">
+                {invoice.paymentMethod || "Not recorded"}
+              </p>
             </div>
           </div>
 
@@ -198,39 +220,60 @@ export const InvoiceDetailModal = ({
 
           {/* Actions */}
           <div
-            className={`flex flex-col gap-3 sm:flex-row print:hidden ${
+            className={`border-t pt-4 print:hidden ${
               isDownloading ? "hidden" : ""
             }`}
           >
             {invoice.status === "pending" && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(150px,1fr)_auto] sm:items-center">
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) =>
+                    setPaymentMethod(value as NonNullable<Invoice["paymentMethod"]>)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="gpay">GPay</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  onClick={() => onMarkPaid(invoice.id, paymentMethod)}
+                  className="w-full sm:w-28"
+                >
+                  Mark Paid
+                </Button>
+              </div>
+            )}
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Button
+                disabled={invoice.status === "pending" || isDownloading}
+                onClick={handlePrint}
+                className="w-full"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print Invoice
+              </Button>
               <Button
                 variant="outline"
-                onClick={() => onMarkPaid(invoice.id)}
-                className="flex-1"
+                onClick={handleDownloadPdf}
+                className="w-full"
+                disabled={isDownloading}
               >
-                Mark Paid
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
               </Button>
-            )}
-            <Button
-              disabled={invoice.status === "pending" || isDownloading}
-              onClick={handlePrint}
-              className="flex-1"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              Print Invoice
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleDownloadPdf}
-              className="flex-1"
-              disabled={isDownloading}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
+              <Button variant="outline" onClick={onClose} className="w-full">
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </div>

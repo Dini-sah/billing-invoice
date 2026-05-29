@@ -1,33 +1,50 @@
-// Google Apps Script for "Mobile Shop Billing" Google Sheets backend.
-// 1) Update SHEET_ID and SHEET_NAME.
-// 2) In Apps Script: Deploy -> New deployment -> Web app -> Anyone.
-// 3) Use the Web app URL in src/utils/googleSheets.ts.
+// Google Apps Script for Hari Electronics invoice backend.
+// Sheet columns:
+// A InvoiceID, B Customer, C Phone, D Date, E Type, F Items,
+// G Subtotal, H Tax, I Total, J Status, K CreatedAt, L Payment Method
 
 const SHEET_ID = '1uIGqqdHJ3eZabPCFYfwwZIVaGnq1NHlI2B8LbciWtxY';
 const SHEET_NAME = 'Invoices';
 
-function getSpreadsheetID() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(); // Gets the currently active spreadsheet
-  var spreadSheetID = ss.getId(); // Retrieves the ID
-  console.log(spreadSheetID); // Logs the ID to the Apps Script console
-}
+const COL = {
+  invoiceId: 1,
+  customer: 2,
+  phone: 3,
+  date: 4,
+  type: 5,
+  items: 6,
+  subtotal: 7,
+  tax: 8,
+  total: 9,
+  status: 10,
+  createdAt: 11,
+  paymentMethod: 12
+};
 
 function getSheet_() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const sheet = ss.getSheetByName(SHEET_NAME);
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
-    throw new Error(`Sheet "${SHEET_NAME}" not found in spreadsheet ID ${SHEET_ID}`);
+    throw new Error('Sheet "' + SHEET_NAME + '" not found in spreadsheet ID ' + SHEET_ID);
   }
+  ensurePaymentMethodHeader_(sheet);
   return sheet;
+}
+
+function ensurePaymentMethodHeader_(sheet) {
+  var header = String(sheet.getRange(1, COL.paymentMethod).getValue() || '').trim();
+  if (!header) {
+    sheet.getRange(1, COL.paymentMethod).setValue('Payment Method');
+  }
 }
 
 function doPost(e) {
   try {
-    const payload = JSON.parse(e.postData?.contents || '{}');
+    var payload = JSON.parse((e.postData && e.postData.contents) || '{}');
 
     if (payload.action === 'save') {
-      const invoice = payload.data || {};
-      const sheet = getSheet_();
+      var invoice = payload.data || {};
+      var sheet = getSheet_();
 
       sheet.appendRow([
         invoice.id || '',
@@ -40,59 +57,73 @@ function doPost(e) {
         invoice.taxTotal || 0,
         invoice.total || 0,
         invoice.status || '',
-        new Date()
+        new Date(),
+        ''
       ]);
 
       return jsonResponse_({ success: true });
     }
+
     if (payload.action === 'updateStatus') {
-      const data = payload.data || {};
-      const invoiceId = data.invoiceId || '';
-      const status = data.status || '';
+      var data = payload.data || {};
+      var invoiceId = data.invoiceId || '';
+      var status = data.status || '';
+      var paymentMethod = data.paymentMethod || '';
+
       if (!invoiceId || !status) {
         return jsonResponse_({ success: false, error: 'Missing invoiceId or status' });
       }
-      const sheet = getSheet_();
-      const values = sheet.getDataRange().getValues();
+
+      var sheet = getSheet_();
+      var values = sheet.getDataRange().getValues();
       if (values.length <= 1) {
         return jsonResponse_({ success: false, error: 'No data in sheet' });
       }
-      const idColumnIndex = 0;
-      const statusColumnIndex = 9;
-      for (let i = 1; i < values.length; i++) {
-        if (String(values[i][idColumnIndex]) === String(invoiceId)) {
-          sheet.getRange(i + 1, statusColumnIndex + 1).setValue(status);
-          return jsonResponse_({ success: true });
+
+      for (var i = 1; i < values.length; i++) {
+        if (String(values[i][COL.invoiceId - 1]) === String(invoiceId)) {
+          var rowNumber = i + 1;
+          sheet.getRange(rowNumber, COL.status).setValue(status);
+          sheet.getRange(rowNumber, COL.paymentMethod).setValue(paymentMethod);
+          return jsonResponse_({
+            success: true,
+            invoiceId: invoiceId,
+            status: status,
+            paymentMethod: paymentMethod,
+            updatedRow: rowNumber
+          });
         }
       }
-      return jsonResponse_({ success: false, error: 'Invoice not found' });
+
+      return jsonResponse_({ success: false, error: 'Invoice not found: ' + invoiceId });
     }
+
     return jsonResponse_({ success: false, error: 'Unknown action' });
   } catch (err) {
-    return jsonResponse_({ success: false, error: String(err) });
+    return jsonResponse_({ success: false, error: String(err && err.stack ? err.stack : err) });
   }
 }
 
 function doGet(e) {
   try {
-    const action = e?.parameter?.action || '';
+    var action = (e && e.parameter && e.parameter.action) || '';
 
     if (action === 'getRecent') {
-      const sheet = getSheet_();
-      const values = sheet.getDataRange().getValues();
+      var sheet = getSheet_();
+      var values = sheet.getDataRange().getValues();
 
       if (values.length <= 1) {
         return jsonResponse_({ success: true, data: [], total: 0, page: 1, limit: 20 });
       }
 
-      const page = Math.max(1, Number(e.parameter.page || 1));
-      const limit = Math.min(100, Math.max(1, Number(e.parameter.limit || 20)));
-      const search = String(e.parameter.search || '').trim().toLowerCase();
+      var page = Math.max(1, Number(e.parameter.page || 1));
+      var limit = Math.min(100, Math.max(1, Number(e.parameter.limit || 20)));
+      var search = String(e.parameter.search || '').trim().toLowerCase();
 
-      const rows = values.slice(1).map((row) => {
-        let createdAt = '';
-        if (row[10]) {
-          const parsedDate = new Date(row[10]);
+      var rows = values.slice(1).map(function(row) {
+        var createdAt = '';
+        if (row[COL.createdAt - 1]) {
+          var parsedDate = new Date(row[COL.createdAt - 1]);
           if (!Number.isNaN(parsedDate.getTime())) {
             createdAt = Utilities.formatDate(
               parsedDate,
@@ -103,28 +134,31 @@ function doGet(e) {
         }
 
         return {
-          id: row[0],
-          customerName: row[1],
-          phoneNumber: row[2],
-          date: row[3],
-          createdAt,
-          type: row[4],
-          items: JSON.parse(row[5] || '[]'),
-          subtotal: Number(row[6] || 0),
-          taxTotal: Number(row[7] || 0),
-          total: Number(row[8] || 0),
-          status: row[9] || ''
+          id: row[COL.invoiceId - 1],
+          customerName: row[COL.customer - 1],
+          phoneNumber: row[COL.phone - 1],
+          date: row[COL.date - 1],
+          createdAt: createdAt,
+          type: row[COL.type - 1],
+          items: JSON.parse(row[COL.items - 1] || '[]'),
+          subtotal: Number(row[COL.subtotal - 1] || 0),
+          taxTotal: Number(row[COL.tax - 1] || 0),
+          total: Number(row[COL.total - 1] || 0),
+          status: row[COL.status - 1] || '',
+          paymentMethod: row[COL.paymentMethod - 1] || ''
         };
       });
 
-      const ordered = rows.reverse();
-      const sourceRows = search ? ordered : ordered.slice(0, 100);
-      const filtered = search
-        ? sourceRows.filter((row) => {
-            const itemsText = (row.items || [])
-              .map((item) => `${item.description || ''} ${item.productType || ''}`)
+      var ordered = rows.reverse();
+      var sourceRows = search ? ordered : ordered.slice(0, 100);
+      var filtered = search
+        ? sourceRows.filter(function(row) {
+            var itemsText = (row.items || [])
+              .map(function(item) {
+                return (item.description || '') + ' ' + (item.productType || '');
+              })
               .join(' ');
-            const haystack = [
+            var haystack = [
               row.id,
               row.customerName,
               row.phoneNumber,
@@ -132,23 +166,25 @@ function doGet(e) {
               row.createdAt,
               row.type,
               row.status,
+              row.paymentMethod,
               itemsText
             ]
               .join(' ')
               .toLowerCase();
-            return haystack.includes(search);
+            return haystack.indexOf(search) !== -1;
           })
         : sourceRows;
-      const total = filtered.length;
-      const startIndex = (page - 1) * limit;
-      const data = filtered.slice(startIndex, startIndex + limit);
 
-      return jsonResponse_({ success: true, data, total, page, limit });
+      var total = filtered.length;
+      var startIndex = (page - 1) * limit;
+      var data = filtered.slice(startIndex, startIndex + limit);
+
+      return jsonResponse_({ success: true, data: data, total: total, page: page, limit: limit });
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
   } catch (err) {
-    return jsonResponse_({ success: false, error: String(err) });
+    return jsonResponse_({ success: false, error: String(err && err.stack ? err.stack : err) });
   }
 }
 

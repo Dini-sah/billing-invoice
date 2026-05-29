@@ -48,7 +48,269 @@ export const InvoiceDetailModal = ({
   }, [invoice.id, invoice.paymentMethod]);
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open("", "_blank", "width=900,height=1200");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const escapeHtml = (value: unknown) =>
+      String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    const itemsRows = invoice.items
+      .map((item) => {
+        const itemTotal = item.quantity * item.price;
+        return `
+          <tr>
+            <td>${escapeHtml(item.description)}</td>
+            <td>${escapeHtml(item.productType)}</td>
+            <td class="center">${escapeHtml(item.quantity)}</td>
+            <td class="right">₹${item.price.toFixed(2)}</td>
+            <td class="right strong">₹${itemTotal.toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>${invoice.id}</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 12mm;
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              color: #111827;
+              font-family: Arial, sans-serif;
+            }
+            body {
+              width: 186mm;
+              margin: 0 auto;
+              font-size: 12px;
+            }
+            img {
+              max-width: 100%;
+            }
+            .invoice {
+              position: relative;
+              min-height: 260mm;
+              padding: 0;
+            }
+            .watermark {
+              position: absolute;
+              top: 92mm;
+              left: 50%;
+              width: 130mm;
+              transform: translateX(-50%);
+              opacity: 0.11;
+              z-index: 0;
+            }
+            .content {
+              position: relative;
+              z-index: 1;
+            }
+            .top {
+              display: flex;
+              justify-content: space-between;
+              gap: 16px;
+              border-bottom: 2px solid #111827;
+              padding-bottom: 14px;
+              margin-bottom: 18px;
+            }
+            h1 {
+              margin: 0 0 6px;
+              font-size: 26px;
+              line-height: 1.1;
+            }
+            h2 {
+              margin: 0 0 10px;
+              font-size: 14px;
+            }
+            .muted {
+              color: #4b5563;
+            }
+            .invoice-id {
+              text-align: right;
+              line-height: 1.7;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 10px;
+              margin-bottom: 18px;
+            }
+            .box {
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              padding: 10px;
+              background: rgba(249, 250, 251, 0.92);
+            }
+            .label {
+              margin-bottom: 4px;
+              color: #6b7280;
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+            }
+            .value {
+              font-weight: 700;
+              word-break: break-word;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+              margin-top: 8px;
+              border: 1px solid #d1d5db;
+            }
+            th,
+            td {
+              border-bottom: 1px solid #e5e7eb;
+              padding: 8px;
+              word-break: break-word;
+            }
+            th {
+              background: #f3f4f6;
+              color: #374151;
+              font-size: 10px;
+              text-align: left;
+              text-transform: uppercase;
+            }
+            .center {
+              text-align: center;
+            }
+            .right {
+              text-align: right;
+            }
+            .strong {
+              font-weight: 700;
+            }
+            .totals {
+              width: 72mm;
+              margin-left: auto;
+              margin-top: 18px;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              padding: 10px;
+              background: rgba(249, 250, 251, 0.94);
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 5px 0;
+            }
+            .grand {
+              margin-top: 6px;
+              border-top: 1px solid #d1d5db;
+              padding-top: 9px;
+              font-size: 16px;
+              font-weight: 800;
+            }
+            @media print {
+              body {
+                width: auto;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <main class="invoice">
+            <img class="watermark" src="${HELogoBlack}" alt="" />
+            <section class="content">
+              <div class="top">
+                <div>
+                  <h1>Hari Electronics</h1>
+                  <div class="muted">Professional Mobile Device Services</div>
+                </div>
+                <div class="invoice-id">
+                  <div><strong>Invoice:</strong> ${escapeHtml(displayInvoice.id)}</div>
+                  <div><strong>Date:</strong> ${escapeHtml(
+                    formatDateTime(displayInvoice.createdAt || displayInvoice.date)
+                  )}</div>
+                </div>
+              </div>
+
+              <div class="grid">
+                <div class="box">
+                  <div class="label">Customer</div>
+                  <div class="value">${escapeHtml(invoice.customerName)}</div>
+                </div>
+                <div class="box">
+                  <div class="label">Phone</div>
+                  <div class="value">${escapeHtml(invoice.phoneNumber)}</div>
+                </div>
+                <div class="box">
+                  <div class="label">Type</div>
+                  <div class="value">${escapeHtml(displayInvoice.type)}</div>
+                </div>
+                <div class="box">
+                  <div class="label">Status</div>
+                  <div class="value">${escapeHtml(displayInvoice.status)}</div>
+                </div>
+                <div class="box">
+                  <div class="label">Payment Method</div>
+                  <div class="value">${escapeHtml(
+                    displayInvoice.paymentMethod || "Not recorded"
+                  )}</div>
+                </div>
+              </div>
+
+              <h2>Items & Services</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 42%">Description</th>
+                    <th style="width: 20%">Type</th>
+                    <th style="width: 10%" class="center">Qty</th>
+                    <th style="width: 14%" class="right">Price</th>
+                    <th style="width: 14%" class="right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>${itemsRows}</tbody>
+              </table>
+
+              <div class="totals">
+                <div class="total-row">
+                  <span>Subtotal</span>
+                  <strong>₹${invoice.subtotal.toFixed(2)}</strong>
+                </div>
+                <div class="total-row">
+                  <span>Tax (3.5%)</span>
+                  <strong>₹${invoice.taxTotal.toFixed(2)}</strong>
+                </div>
+                <div class="total-row grand">
+                  <span>Total</span>
+                  <span>₹${invoice.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </section>
+          </main>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const waitForRender = () =>

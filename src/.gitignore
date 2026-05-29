@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+.env*
+.dev.vars*
+*.log
+*.tsbuildinfo
+
+invoice-proxy/node_modules/
+invoice-proxy/.wrangler/
+invoice-proxy/.env*
+invoice-proxy/.dev.vars*

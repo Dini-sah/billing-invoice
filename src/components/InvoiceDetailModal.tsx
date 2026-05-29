@@ -145,7 +145,7 @@ export const InvoiceDetailModal = ({
         className="print-invoice bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
       >
         <div
-          className={`sticky top-0 bg-white border-b p-4 flex items-center justify-between print:hidden ${
+          className={`sticky top-0 z-20 bg-white border-b p-4 flex items-center justify-between print:hidden ${
             isDownloading || isSharing ? "hidden" : ""
           }`}
         >
@@ -158,16 +158,16 @@ export const InvoiceDetailModal = ({
         <div className="p-4 sm:p-6 space-y-6 print:space-y-4 relative">
           {/* Header */}
           <div
-            className="absolute w-[75%] opacity-[.1]"
+            className="pointer-events-none absolute z-20 w-[82%] opacity-[.18]"
             style={{
-              top: "30%",
+              top: "34%",
               left: "50%",
               transform: "translate(-50%, -50%)",
             }}
           >
             <img src={HELogoBlack} alt="Hari Electronics" className="" />
           </div>
-          <div className="text-center print:text-left">
+          <div className="relative z-10 text-center print:text-left">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Hari Electronics
             </h1>
@@ -175,7 +175,7 @@ export const InvoiceDetailModal = ({
           </div>
 
           {/* Invoice Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
               <p className="text-sm text-gray-600">Invoice #</p>
               <p className="font-semibold">{displayInvoice.id}</p>
@@ -203,7 +203,7 @@ export const InvoiceDetailModal = ({
           </div>
 
           {/* Customer Info */}
-          <div className="space-y-2">
+          <div className="relative z-10 space-y-2">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <User className="w-4 h-4 print:hidden" />
               Customer Information
@@ -221,7 +221,7 @@ export const InvoiceDetailModal = ({
           </div>
 
           {/* Items */}
-          <div className="space-y-2">
+          <div className="relative z-10 space-y-2">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Items & Services
@@ -274,7 +274,7 @@ export const InvoiceDetailModal = ({
           </div>
 
           {/* Totals */}
-          <div className="border-t pt-4 space-y-2">
+          <div className="relative z-10 border-t pt-4 space-y-2">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal:</span>
               <span className="font-medium">
@@ -299,7 +299,7 @@ export const InvoiceDetailModal = ({
           <div
             className={`border-t pt-4 print:hidden ${
               isDownloading || isSharing ? "hidden" : ""
-            }`}
+            } relative z-10`}
           >
             {invoice.status === "pending" && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(150px,1fr)_auto] sm:items-center">

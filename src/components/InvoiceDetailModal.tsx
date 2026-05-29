@@ -43,7 +43,7 @@ export const InvoiceDetailModal = ({
     useState<Invoice["paymentMethod"]>();
   const [paymentMethod, setPaymentMethod] =
     useState<NonNullable<Invoice["paymentMethod"]>>("cash");
-  const { isPrintMode, printInvoice } = useInvoicePrint();
+  const { isPrintMode, printInvoice, cleanupPrintMode } = useInvoicePrint();
 
   const displayInvoice =
     paidMethodOverride && invoice.status === "pending"
@@ -107,6 +107,21 @@ export const InvoiceDetailModal = ({
 
   return (
     <>
+      {isPrintMode && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-white p-3">
+          <div className="mb-3 flex justify-end print:hidden">
+            <Button variant="outline" onClick={cleanupPrintMode}>
+              Close Preview
+            </Button>
+          </div>
+          <PrintableInvoice
+            invoice={invoice}
+            displayInvoice={displayInvoice}
+            screenVisible
+          />
+        </div>
+      )}
+
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-3 backdrop-blur-sm print:hidden sm:p-4">
         <div
           ref={pdfRef}
@@ -140,11 +155,7 @@ export const InvoiceDetailModal = ({
         </div>
       </div>
 
-      <PrintableInvoice
-        invoice={invoice}
-        displayInvoice={displayInvoice}
-        screenVisible={isPrintMode}
-      />
+      <PrintableInvoice invoice={invoice} displayInvoice={displayInvoice} />
     </>
   );
 };

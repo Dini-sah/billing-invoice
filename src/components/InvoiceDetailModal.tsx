@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { X, Printer, FileText, User, Download } from "lucide-react";
+import { X, Printer, FileText, User, Download, Share2 } from "lucide-react";
 import { formatDateTime } from "../utils/date";
 import HELogoBlack from "../assets/images/HElogoBlack.webp";
 
@@ -19,7 +19,7 @@ interface InvoiceDetailModalProps {
   onMarkPaid: (
     invoiceId: string,
     paymentMethod: Invoice["paymentMethod"]
-  ) => void;
+  ) => Promise<boolean>;
 }
 
 export const InvoiceDetailModal = ({
@@ -31,15 +31,91 @@ export const InvoiceDetailModal = ({
 
   const pdfRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [paidMethodOverride, setPaidMethodOverride] =
+    useState<Invoice["paymentMethod"]>();
   const [paymentMethod, setPaymentMethod] =
     useState<NonNullable<Invoice["paymentMethod"]>>("cash");
 
+  const displayInvoice =
+    paidMethodOverride && invoice.status === "pending"
+      ? { ...invoice, status: "paid" as const, paymentMethod: paidMethodOverride }
+      : invoice;
+
   useEffect(() => {
     setPaymentMethod(invoice.paymentMethod || "cash");
+    setPaidMethodOverride(undefined);
   }, [invoice.id, invoice.paymentMethod]);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const waitForRender = () =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+
+  const createPdfBlob = async () => {
+    if (!pdfRef.current) return null;
+    return html2pdf()
+      .set({
+        filename: `${invoice.id || "invoice"}.pdf`,
+        margin: [10, 10, 10, 10],
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(pdfRef.current)
+      .toPdf()
+      .outputPdf("blob");
+  };
+
+  const shareInvoicePdf = async () => {
+    setIsSharing(true);
+    try {
+      await waitForRender();
+      const blob = await createPdfBlob();
+      if (!blob) return false;
+
+      const file = new File([blob], `${invoice.id || "invoice"}.pdf`, {
+        type: "application/pdf",
+      });
+      const shareData = {
+        title: `Invoice ${invoice.id}`,
+        text: `Hari Electronics invoice ${invoice.id} for ${
+          invoice.customerName
+        }. Total: Rs ${invoice.total.toFixed(2)}.`,
+        files: [file],
+      };
+
+      if (navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+        return true;
+      }
+
+      await html2pdf()
+        .set({
+          filename: `${invoice.id || "invoice"}.pdf`,
+          margin: [10, 10, 10, 10],
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(pdfRef.current)
+        .save();
+      return false;
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleMarkPaidAndShare = async () => {
+    setPaidMethodOverride(paymentMethod);
+    const markedPaid = await onMarkPaid(invoice.id, paymentMethod);
+    if (!markedPaid) {
+      setPaidMethodOverride(undefined);
+      return;
+    }
+    await shareInvoicePdf();
   };
 
   const handleDownloadPdf = async () => {
@@ -47,6 +123,7 @@ export const InvoiceDetailModal = ({
     const filename = `${invoice.id || "invoice"}.pdf`;
     setIsDownloading(true);
     try {
+      await waitForRender();
       await html2pdf()
         .set({
           filename,
@@ -69,7 +146,7 @@ export const InvoiceDetailModal = ({
       >
         <div
           className={`sticky top-0 bg-white border-b p-4 flex items-center justify-between print:hidden ${
-            isDownloading ? "hidden" : ""
+            isDownloading || isSharing ? "hidden" : ""
           }`}
         >
           <h3 className="text-xl font-bold text-gray-900">Invoice Details</h3>
@@ -101,26 +178,26 @@ export const InvoiceDetailModal = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
               <p className="text-sm text-gray-600">Invoice #</p>
-              <p className="font-semibold">{invoice.id}</p>
+              <p className="font-semibold">{displayInvoice.id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Date</p>
               <p className="font-semibold">
-                {formatDateTime(invoice.createdAt || invoice.date)}
+                {formatDateTime(displayInvoice.createdAt || displayInvoice.date)}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Type</p>
-              <p className="font-semibold capitalize">{invoice.type}</p>
+              <p className="font-semibold capitalize">{displayInvoice.type}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
-              <p className="font-semibold capitalize">{invoice.status}</p>
+              <p className="font-semibold capitalize">{displayInvoice.status}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Payment Method</p>
               <p className="font-semibold capitalize">
-                {invoice.paymentMethod || "Not recorded"}
+                {displayInvoice.paymentMethod || "Not recorded"}
               </p>
             </div>
           </div>
@@ -221,7 +298,7 @@ export const InvoiceDetailModal = ({
           {/* Actions */}
           <div
             className={`border-t pt-4 print:hidden ${
-              isDownloading ? "hidden" : ""
+              isDownloading || isSharing ? "hidden" : ""
             }`}
           >
             {invoice.status === "pending" && (
@@ -245,14 +322,24 @@ export const InvoiceDetailModal = ({
                 </Select>
                 <Button
                   variant="outline"
-                  onClick={() => onMarkPaid(invoice.id, paymentMethod)}
+                  onClick={handleMarkPaidAndShare}
                   className="w-full sm:w-28"
+                  disabled={isSharing}
                 >
-                  Mark Paid
+                  {isSharing ? "Sharing..." : "Mark Paid"}
                 </Button>
               </div>
             )}
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+              <Button
+                variant="outline"
+                onClick={shareInvoicePdf}
+                className="w-full"
+                disabled={invoice.status === "pending" || isSharing}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share PDF
+              </Button>
               <Button
                 disabled={invoice.status === "pending" || isDownloading}
                 onClick={handlePrint}

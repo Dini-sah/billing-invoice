@@ -38,7 +38,7 @@ function App() {
   const handleMarkPaid = async (
     invoiceId: string,
     paymentMethod: Invoice["paymentMethod"]
-  ) => {
+  ): Promise<boolean> => {
     const result = await updateInvoiceStatus(invoiceId, "paid", paymentMethod);
     if (result.success) {
       setSelectedInvoice((current) =>
@@ -48,8 +48,10 @@ function App() {
       );
       showToast("Invoice marked as paid", "success");
       refresh();
+      return true;
     } else {
       showToast(result.error || "Failed to update status", "error");
+      return false;
     }
   };
 

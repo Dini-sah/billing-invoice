@@ -56,18 +56,73 @@ export const InvoiceDetailModal = ({
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
-  const createPdfBlob = async () => {
+  const createPdfSourceElement = () => {
     if (!pdfRef.current) return null;
-    return html2pdf()
-      .set({
-        filename: `${invoice.id || "invoice"}.pdf`,
-        margin: [10, 10, 10, 10],
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(pdfRef.current)
-      .toPdf()
-      .outputPdf("blob");
+
+    const pdfWidth = 720;
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "absolute";
+    wrapper.style.left = "0";
+    wrapper.style.top = "0";
+    wrapper.style.width = `${pdfWidth}px`;
+    wrapper.style.background = "#ffffff";
+    wrapper.style.opacity = "0.01";
+    wrapper.style.pointerEvents = "none";
+    wrapper.style.zIndex = "-9999";
+
+    const clone = pdfRef.current.cloneNode(true) as HTMLElement;
+    clone.style.width = `${pdfWidth}px`;
+    clone.style.maxWidth = `${pdfWidth}px`;
+    clone.style.maxHeight = "none";
+    clone.style.overflow = "visible";
+    clone.style.boxShadow = "none";
+    clone.style.borderRadius = "0";
+
+    clone.querySelectorAll<HTMLElement>(".overflow-x-auto").forEach((node) => {
+      node.style.overflow = "visible";
+    });
+    clone.querySelectorAll<HTMLElement>("table").forEach((table) => {
+      table.style.width = "100%";
+      table.style.minWidth = "0";
+      table.style.tableLayout = "fixed";
+    });
+
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    return {
+      element: clone,
+      cleanup: () => wrapper.remove(),
+    };
+  };
+
+  const pdfOptions = (filename: string) => ({
+    filename,
+    margin: [8, 8, 8, 8],
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      width: 720,
+      windowWidth: 720,
+      scrollX: 0,
+      scrollY: 0,
+    },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  });
+
+  const createPdfBlob = async () => {
+    const source = createPdfSourceElement();
+    if (!source) return null;
+    try {
+      return await html2pdf()
+        .set(pdfOptions(`${invoice.id || "invoice"}.pdf`))
+        .from(source.element)
+        .toPdf()
+        .outputPdf("blob");
+    } finally {
+      source.cleanup();
+    }
   };
 
   const shareInvoicePdf = async () => {
@@ -93,15 +148,16 @@ export const InvoiceDetailModal = ({
         return true;
       }
 
-      await html2pdf()
-        .set({
-          filename: `${invoice.id || "invoice"}.pdf`,
-          margin: [10, 10, 10, 10],
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(pdfRef.current)
-        .save();
+      const source = createPdfSourceElement();
+      if (!source) return false;
+      try {
+        await html2pdf()
+          .set(pdfOptions(`${invoice.id || "invoice"}.pdf`))
+          .from(source.element)
+          .save();
+      } finally {
+        source.cleanup();
+      }
       return false;
     } finally {
       setIsSharing(false);
@@ -124,15 +180,13 @@ export const InvoiceDetailModal = ({
     setIsDownloading(true);
     try {
       await waitForRender();
-      await html2pdf()
-        .set({
-          filename,
-          margin: [10, 10, 10, 10],
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(pdfRef.current)
-        .save();
+      const source = createPdfSourceElement();
+      if (!source) return;
+      try {
+        await html2pdf().set(pdfOptions(filename)).from(source.element).save();
+      } finally {
+        source.cleanup();
+      }
     } finally {
       setIsDownloading(false);
     }

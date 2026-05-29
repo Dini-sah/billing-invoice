@@ -33,10 +33,10 @@ export const InvoiceItemRow = ({
   const taxAmount = item.taxable ? itemTotal * 0.035 : 0;
 
   return (
-    <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
         <div className="flex-1 space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-[150px_190px_1fr]">
             <Select
               value={item.category}
               onValueChange={(value) =>
@@ -46,7 +46,7 @@ export const InvoiceItemRow = ({
                 })
               }
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -58,7 +58,7 @@ export const InvoiceItemRow = ({
               value={item.productType}
               onValueChange={(value) => updateItem({ productType: value })}
             >
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger>
                 <SelectValue placeholder="Product type" />
               </SelectTrigger>
               <SelectContent>
@@ -70,26 +70,19 @@ export const InvoiceItemRow = ({
               </SelectContent>
             </Select>
             <Input
-              placeholder="Description (e.g., iPhone Screen Replacement)"
+              placeholder="Description (e.g., iPhone screen replacement)"
               value={item.description}
               onChange={(e) => updateItem({ description: e.target.value })}
               className="font-medium"
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {/* <select
-              value={item.type}
-              onChange={(e) => updateItem({ type: e.target.value as 'product' | 'service' })}
-              className="px-3 py-2 border rounded-md text-sm bg-white"
-            >
-              <option value="product">Product</option>
-              <option value="service">Service</option>
-            </select> */}
-
-            <div className="flex items-center gap-2 flex-1">
-              <label className="text-sm text-gray-600">Qty:</label>
-              <div className="flex items-center gap-1">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase text-gray-500">
+                Quantity
+              </label>
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -108,7 +101,7 @@ export const InvoiceItemRow = ({
                   onChange={(e) =>
                     updateItem({ quantity: parseInt(e.target.value) || 1 })
                   }
-                  className="w-20 h-8 text-center"
+                  className="h-8 w-20 text-center"
                 />
                 <Button
                   type="button"
@@ -122,8 +115,10 @@ export const InvoiceItemRow = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-1">
-              <label className="text-sm text-gray-600">Price:</label>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase text-gray-500">
+                Price
+              </label>
               <Input
                 type="number"
                 step="0.01"
@@ -133,33 +128,35 @@ export const InvoiceItemRow = ({
                 onChange={(e) =>
                   updateItem({ price: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full sm:w-28 h-8"
+                className="h-8"
               />
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-right">
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                Line Total
+              </div>
+              <div className="text-lg font-bold text-gray-950">
+                ₹{itemTotal.toFixed(2)}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={item.taxable}
                 onChange={(e) => updateItem({ taxable: e.target.checked })}
-                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="text-sm text-gray-700">Apply 3.5% tax</span>
+              Apply 3.5% tax
             </label>
-
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Item Total:</div>
-              <div className="font-semibold text-lg">
-                ₹{itemTotal.toFixed(2)}
+            {item.taxable && (
+              <div className="text-sm font-medium text-emerald-700">
+                Tax: ₹{taxAmount.toFixed(2)}
               </div>
-              {item.taxable && (
-                <div className="text-sm text-green-600">
-                  + Tax: ₹{taxAmount.toFixed(2)}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -169,7 +166,7 @@ export const InvoiceItemRow = ({
             variant="ghost"
             size="sm"
             onClick={onRemove}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            className="self-end text-red-500 hover:bg-red-50 hover:text-red-700 lg:self-start"
           >
             <X className="w-4 h-4" />
           </Button>

@@ -6,7 +6,14 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { InvoiceItemRow } from "./InvoiceItemRow";
-import { Plus, Save, FileText } from "lucide-react";
+import {
+  CalendarDays,
+  FileText,
+  Plus,
+  ReceiptText,
+  Save,
+  UserRound,
+} from "lucide-react";
 
 interface InvoiceFormProps {
   onSave: (invoice: Invoice) => void;
@@ -32,7 +39,15 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
 
   const productTypeOptions: Record<"sale" | "service", string[]> = {
     sale: ["Phone cases", "Tempered glass", "Mobile phones", "Accessories", "Other"],
-    service: ["Combo replacement","OCA", "Battery replacement", "Software service", "Water damage", "CC (Charging connector)", "Other"]
+    service: [
+      "Combo replacement",
+      "OCA",
+      "Battery replacement",
+      "Software service",
+      "Water damage",
+      "CC (Charging connector)",
+      "Other",
+    ],
   };
 
   const addItem = () => {
@@ -111,7 +126,6 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
       if (result.success) {
         showToast("Invoice saved successfully!", "success");
         onSave(invoice);
-        // Reset form
         setCustomerName("");
         setPhoneNumber("");
         setItems([
@@ -138,140 +152,165 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
   const { subtotal, taxTotal, total } = calculateTotals();
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-sm border">
-      <div className="flex items-center gap-2 mb-6">
-        <FileText className="w-6 h-6 text-green-600" />
-        <h2 className="text-2xl font-bold text-gray-900">Create Invoice</h2>
-      </div>
-
-      {/* Customer Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <Label htmlFor="customerName">Customer Name</Label>
-          <Input
-            id="customerName"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="John Doe"
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="phoneNumber">Phone Number</Label>
-          <Input
-            id="phoneNumber"
-            type="tel"
-            value={phoneNumber}
-            placeholder="9876543210"
-            maxLength={10}
-            className="mt-1"
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, "");
-              if (value.length <= 10) {
-                setPhoneNumber(value);
-              }
-            }}
-          />
+    <div className="mx-auto max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-5 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-950">Create Invoice</h2>
+            <p className="text-sm text-gray-500">
+              Add customer details and billable items.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="mt-1"
-        />
-      </div>
+      <div className="p-4 sm:p-6">
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <UserRound className="h-4 w-4 text-emerald-700" />
+            <h3 className="font-semibold text-gray-950">Customer Details</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="customerName">Customer Name</Label>
+              <Input
+                id="customerName"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="John Doe"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={phoneNumber}
+                placeholder="9876543210"
+                maxLength={10}
+                className="mt-1"
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (value.length <= 10) {
+                    setPhoneNumber(value);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </section>
 
-      {/* Items */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <Label className="text-lg font-semibold">Items</Label>
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-emerald-700" />
+            <h3 className="font-semibold text-gray-950">Invoice Date</h3>
+          </div>
+          <div className="max-w-sm">
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <ReceiptText className="h-4 w-4 text-emerald-700" />
+              <h3 className="font-semibold text-gray-950">Items & Services</h3>
+            </div>
+            <Button
+              type="button"
+              onClick={addItem}
+              variant="outline"
+              size="sm"
+              className="w-full text-emerald-700 sm:w-auto"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add Item
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {items.map((item) => (
+              <InvoiceItemRow
+                key={item.id}
+                item={item}
+                productTypeOptions={productTypeOptions}
+                onChange={(updatedItem) => updateItem(item.id, updatedItem)}
+                onRemove={() => removeItem(item.id)}
+                canRemove={items.length > 1}
+              />
+            ))}
+          </div>
+        </section>
+
+        <div className="ml-auto max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Subtotal</span>
+              <span className="font-medium text-gray-900">
+                ₹{subtotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Tax (3.5%)</span>
+              <span className="font-medium text-gray-900">
+                ₹{taxTotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-950">
+              <span>Total</span>
+              <span className="text-emerald-700">₹{total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-end">
           <Button
             type="button"
-            onClick={addItem}
             variant="outline"
-            size="sm"
-            className="text-green-600 border-green-600 hover:bg-green-50"
+            onClick={() => {
+              setCustomerName("");
+              setPhoneNumber("");
+              setItems([
+                {
+                  id: "1",
+                  category: "sale",
+                  description: "",
+                  productType: "",
+                  quantity: 1,
+                  price: 0,
+                  taxable: false,
+                },
+              ]);
+            }}
+            className="sm:w-32"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Item
+            Clear
+          </Button>
+          <Button onClick={handleSave} disabled={saving} className="sm:w-48">
+            {saving ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Save className="w-4 h-4" />
+                Save Invoice
+              </span>
+            )}
           </Button>
         </div>
-
-        <div className="space-y-3">
-          {items.map((item, index) => (
-            <InvoiceItemRow
-              key={item.id}
-              item={item}
-              productTypeOptions={productTypeOptions}
-              onChange={(updatedItem) => updateItem(item.id, updatedItem)}
-              onRemove={() => removeItem(item.id)}
-              canRemove={items.length > 1}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Totals */}
-      <div className="border-t pt-4 space-y-2">
-        <div className="flex justify-between text-gray-600">
-          <span>Subtotal:</span>
-          <span className="font-medium">₹{subtotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Tax (3.5%):</span>
-          <span className="font-medium">₹{taxTotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
-          <span>Total:</span>
-          <span className="text-green-600">₹{total.toFixed(2)}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex flex-col gap-3 mt-6 sm:flex-row">
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex-1 bg-green-600 hover:bg-green-700"
-        >
-          {saving ? (
-            <span className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Saving...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Save className="w-4 h-4" />
-              Save Invoice
-            </span>
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setCustomerName("");
-            setPhoneNumber("");
-            setItems([
-              {
-                id: "1",
-                category: "sale",
-                description: "",
-                productType: "",
-                quantity: 1,
-                price: 0,
-                taxable: false,
-              },
-            ]);
-          }}
-        >
-          Clear
-        </Button>
       </div>
     </div>
   );

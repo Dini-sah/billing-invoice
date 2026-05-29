@@ -61,39 +61,39 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#ecfdf5_0,#f6f7f9_34%,#f3f4f6_100%)]">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/90 shadow-sm backdrop-blur">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-              <div>
-                <img className="w-[120px]" src={HELogo} alt="Hari Electronis" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-24 items-center justify-center rounded-lg border border-gray-200 bg-white shadow-sm">
+                <img className="max-h-10 w-auto" src={HELogo} alt="Hari Electronics" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="truncate text-xl font-bold text-gray-950 sm:text-2xl">
                   Hari Electronics Billing
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-500">
                   Invoice management for mobile repair services
                 </p>
               </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <div className="grid w-full grid-cols-2 rounded-lg border border-gray-200 bg-gray-100 p-1 sm:w-auto sm:min-w-64">
               <Button
                 onClick={() => setActiveTab("create")}
-                variant={activeTab === "create" ? "default" : "outline"}
-                className="flex items-center justify-center gap-2"
+                variant={activeTab === "create" ? "default" : "ghost"}
+                className="h-10 gap-2 shadow-none"
               >
                 <Plus className="w-4 h-4" />
                 Create
               </Button>
               <Button
                 onClick={() => setActiveTab("list")}
-                variant={activeTab === "list" ? "default" : "outline"}
-                className="flex items-center justify-center gap-2"
+                variant={activeTab === "list" ? "default" : "ghost"}
+                className="h-10 gap-2 shadow-none"
               >
                 <List className="w-4 h-4" />
                 Invoices
@@ -104,7 +104,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="py-8">
+      <main className="px-4 py-6 sm:px-6 sm:py-8">
         {activeTab === "create" ? (
           <InvoiceForm onSave={handleInvoiceSaved} showToast={showToast} />
         ) : (

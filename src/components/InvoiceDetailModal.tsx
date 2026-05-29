@@ -139,23 +139,23 @@ export const InvoiceDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 print:fixed print:inset-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-3 backdrop-blur-sm sm:p-4 print:fixed print:inset-0">
       <div
         ref={pdfRef}
-        className="print-invoice bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="print-invoice w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl max-h-[90vh]"
       >
         <div
-          className={`sticky top-0 z-20 bg-white border-b p-4 flex items-center justify-between print:hidden ${
+          className={`sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/95 p-4 backdrop-blur print:hidden ${
             isDownloading || isSharing ? "hidden" : ""
           }`}
         >
-          <h3 className="text-xl font-bold text-gray-900">Invoice Details</h3>
+          <h3 className="text-lg font-bold text-gray-950">Invoice Details</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-6 print:space-y-4 relative">
+        <div className="relative space-y-6 p-4 print:space-y-4 sm:p-6">
           {/* Header */}
           <div
             className="pointer-events-none absolute z-20 w-[82%] opacity-[.18]"
@@ -168,35 +168,35 @@ export const InvoiceDetailModal = ({
             <img src={HELogoBlack} alt="Hari Electronics" className="" />
           </div>
           <div className="relative z-10 text-center print:text-left">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="mb-2 text-2xl font-bold text-gray-950">
               Hari Electronics
             </h1>
-            <p className="text-gray-600">Professional Mobile Device Services</p>
+            <p className="text-gray-500">Professional Mobile Device Services</p>
           </div>
 
           {/* Invoice Info */}
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="relative z-10 grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2">
             <div>
-              <p className="text-sm text-gray-600">Invoice #</p>
-              <p className="font-semibold">{displayInvoice.id}</p>
+              <p className="text-xs font-semibold uppercase text-gray-500">Invoice #</p>
+              <p className="font-semibold text-gray-950">{displayInvoice.id}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Date</p>
-              <p className="font-semibold">
+              <p className="text-xs font-semibold uppercase text-gray-500">Date</p>
+              <p className="font-semibold text-gray-950">
                 {formatDateTime(displayInvoice.createdAt || displayInvoice.date)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Type</p>
-              <p className="font-semibold capitalize">{displayInvoice.type}</p>
+              <p className="text-xs font-semibold uppercase text-gray-500">Type</p>
+              <p className="font-semibold capitalize text-gray-950">{displayInvoice.type}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="font-semibold capitalize">{displayInvoice.status}</p>
+              <p className="text-xs font-semibold uppercase text-gray-500">Status</p>
+              <p className="font-semibold capitalize text-gray-950">{displayInvoice.status}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Payment Method</p>
-              <p className="font-semibold capitalize">
+              <p className="text-xs font-semibold uppercase text-gray-500">Payment Method</p>
+              <p className="font-semibold capitalize text-gray-950">
                 {displayInvoice.paymentMethod || "Not recorded"}
               </p>
             </div>
@@ -204,46 +204,46 @@ export const InvoiceDetailModal = ({
 
           {/* Customer Info */}
           <div className="relative z-10 space-y-2">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="flex items-center gap-2 font-semibold text-gray-950">
               <User className="w-4 h-4 print:hidden" />
               Customer Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 print:grid-cols-2 print:gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="font-medium">{invoice.customerName}</p>
+                <p className="text-xs font-semibold uppercase text-gray-500">Name</p>
+                <p className="font-medium text-gray-950">{invoice.customerName}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-medium">{invoice.phoneNumber}</p>
+                <p className="text-xs font-semibold uppercase text-gray-500">Phone</p>
+                <p className="font-medium text-gray-950">{invoice.phoneNumber}</p>
               </div>
             </div>
           </div>
 
           {/* Items */}
           <div className="relative z-10 space-y-2">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="flex items-center gap-2 font-semibold text-gray-950">
               <FileText className="w-4 h-4" />
               Items & Services
             </h3>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-gray-200">
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[560px]">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-left p-3 text-sm font-medium text-gray-700">
+                      <th className="p-3 text-left text-xs font-semibold uppercase text-gray-500">
                         Description
                       </th>
-                      <th className="text-center p-3 text-sm font-medium text-gray-700">
+                      <th className="p-3 text-center text-xs font-semibold uppercase text-gray-500">
                         Type
                       </th>
-                      <th className="text-center p-3 text-sm font-medium text-gray-700">
+                      <th className="p-3 text-center text-xs font-semibold uppercase text-gray-500">
                         Qty
                       </th>
-                      <th className="text-right p-3 text-sm font-medium text-gray-700">
+                      <th className="p-3 text-right text-xs font-semibold uppercase text-gray-500">
                         Price
                       </th>
-                      <th className="text-right p-3 text-sm font-medium text-gray-700">
+                      <th className="p-3 text-right text-xs font-semibold uppercase text-gray-500">
                         Total
                       </th>
                     </tr>
@@ -261,7 +261,7 @@ export const InvoiceDetailModal = ({
                           <td className="p-3 text-right">
                             ₹{item.price.toFixed(2)}
                           </td>
-                          <td className="p-3 text-right font-medium">
+                          <td className="p-3 text-right font-semibold text-gray-950">
                             ₹{itemTotal.toFixed(2)}
                           </td>
                         </tr>
@@ -274,22 +274,22 @@ export const InvoiceDetailModal = ({
           </div>
 
           {/* Totals */}
-          <div className="relative z-10 border-t pt-4 space-y-2">
-            <div className="flex justify-between text-gray-600">
-              <span>Subtotal:</span>
-              <span className="font-medium">
+          <div className="relative z-10 ml-auto max-w-md space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Subtotal</span>
+              <span className="font-medium text-gray-900">
                 ₹{invoice.subtotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Tax (3.5%):</span>
-              <span className="font-medium">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Tax (3.5%)</span>
+              <span className="font-medium text-gray-900">
                 ₹{invoice.taxTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t">
-              <span>Total Amount:</span>
-              <span className="text-green-600">
+            <div className="flex justify-between border-t border-gray-200 pt-3 text-xl font-bold text-gray-950">
+              <span>Total Amount</span>
+              <span className="text-emerald-700">
                 ₹{invoice.total.toFixed(2)}
               </span>
             </div>
@@ -297,7 +297,7 @@ export const InvoiceDetailModal = ({
 
           {/* Actions */}
           <div
-            className={`border-t pt-4 print:hidden ${
+            className={`border-t border-gray-200 pt-4 print:hidden ${
               isDownloading || isSharing ? "hidden" : ""
             } relative z-10`}
           >

@@ -15,18 +15,20 @@ export const Toast = ({ message, type, onClose }: ToastProps) => {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 animate-slide-up">
-      <div className={`max-w-md mx-auto p-4 rounded-lg shadow-lg flex items-center gap-3 ${
-        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+      <div className={`max-w-md mx-auto p-4 rounded-lg border shadow-xl flex items-center gap-3 ${
+        type === 'success'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          : 'border-red-200 bg-red-50 text-red-900'
       }`}>
         {type === 'success' ? (
-          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          <CheckCircle className="w-5 h-5 flex-shrink-0 text-emerald-600" />
         ) : (
-          <XCircle className="w-5 h-5 flex-shrink-0" />
+          <XCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
         )}
         <span className="flex-1 text-sm font-medium">{message}</span>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-white/20 rounded transition-colors"
+          className="p-1 hover:bg-black/5 rounded transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

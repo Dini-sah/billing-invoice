@@ -43,7 +43,7 @@ export const InvoiceDetailModal = ({
     useState<Invoice["paymentMethod"]>();
   const [paymentMethod, setPaymentMethod] =
     useState<NonNullable<Invoice["paymentMethod"]>>("cash");
-  const { printInvoice } = useInvoicePrint();
+  const { isPrintMode, printInvoice } = useInvoicePrint();
 
   const displayInvoice =
     paidMethodOverride && invoice.status === "pending"
@@ -140,7 +140,11 @@ export const InvoiceDetailModal = ({
         </div>
       </div>
 
-      <PrintableInvoice invoice={invoice} displayInvoice={displayInvoice} />
+      <PrintableInvoice
+        invoice={invoice}
+        displayInvoice={displayInvoice}
+        screenVisible={isPrintMode}
+      />
     </>
   );
 };
@@ -305,4 +309,3 @@ const InvoiceActions = ({
     </div>
   </div>
 );
-

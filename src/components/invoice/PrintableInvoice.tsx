@@ -5,11 +5,13 @@ import HELogoBlack from "../../assets/images/HElogoBlack.webp";
 export const PrintableInvoice = ({
   invoice,
   displayInvoice,
+  screenVisible = false,
 }: {
   invoice: Invoice;
   displayInvoice: Invoice;
+  screenVisible?: boolean;
 }) => (
-  <div className="invoice-print-only">
+  <div className={screenVisible ? "invoice-print-screen" : "invoice-print-only"}>
     <style>{`
       @page { size: A4; margin: 12mm; }
       @media print {
@@ -200,4 +202,3 @@ const PrintBox = ({ label, value }: { label: string; value: string }) => (
     <div className="invoice-print-value">{value}</div>
   </div>
 );
-

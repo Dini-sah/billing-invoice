@@ -22,8 +22,8 @@ export const storage = {
 };
 
 export const CACHE_KEYS = {
-  RECENT_INVOICES: 'recent_invoices',
-  LAST_FETCH: 'last_invoices_fetch'
+  RECENT_INVOICES: 'recent_invoices_v2',
+  LAST_FETCH: 'last_invoices_fetch_v2'
 };
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes

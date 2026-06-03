@@ -389,7 +389,9 @@ export const InvoiceList = ({
             <h3 className="mb-2 text-lg font-semibold text-gray-950">
               No invoices found
             </h3>
-            <p className="text-gray-600">Change the search or filters to see more invoices.</p>
+            <p className="text-gray-600">
+              No invoices match {filterLabel.toLowerCase()}. Change the search or filters to see more invoices.
+            </p>
           </CardContent>
         </Card>
       ) : (

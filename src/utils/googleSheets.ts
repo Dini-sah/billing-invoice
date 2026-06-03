@@ -115,6 +115,7 @@ export const fetchRecentInvoices = async (
 
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
       }

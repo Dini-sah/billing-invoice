@@ -1,11 +1,13 @@
 // Google Sheets API integration using native fetch
 // Replace YOUR_SCRIPT_ID_HERE with your actual Google Apps Script web app URL
+import { InvoiceFilters, InvoiceSummary } from '../types/invoice';
 
 const GOOGLE_SCRIPT_URL = 'https://invoice-proxy.harielectronics.workers.dev/';
 
 export interface GoogleSheetsResponse {
   success: boolean;
   data?: any;
+  summary?: InvoiceSummary;
   total?: number;
   page?: number;
   limit?: number;
@@ -73,7 +75,8 @@ export const updateInvoiceStatus = async (
 export const fetchRecentInvoices = async (
   page = 1,
   limit = 10,
-  search = ''
+  search = '',
+  filters?: InvoiceFilters
 ): Promise<GoogleSheetsResponse> => {
   try {
     const params = new URLSearchParams({
@@ -82,6 +85,16 @@ export const fetchRecentInvoices = async (
       limit: String(limit),
       search
     });
+
+    if (filters) {
+      params.set('dateRange', filters.dateRange);
+      params.set('startDate', filters.startDate);
+      params.set('endDate', filters.endDate);
+      params.set('type', filters.type);
+      params.set('status', filters.status);
+      params.set('paymentMethod', filters.paymentMethod);
+    }
+
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
       method: 'GET',
       headers: {
@@ -97,6 +110,14 @@ export const fetchRecentInvoices = async (
       success: true,
       data: data.data || [],
       total: Number(data.total || 0),
+      summary: data.summary || {
+        filteredCount: Number(data.total || 0),
+        filteredTotal: 0,
+        todayCount: 0,
+        todayTotal: 0,
+        paidTotal: 0,
+        pendingTotal: 0
+      },
       page: Number(data.page || page),
       limit: Number(data.limit || limit)
     };

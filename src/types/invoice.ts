@@ -23,6 +23,24 @@ export interface Invoice {
   status: 'pending' | 'paid';
 }
 
+export interface InvoiceFilters {
+  dateRange: 'all' | 'today' | 'yesterday' | 'last7' | 'custom';
+  startDate: string;
+  endDate: string;
+  type: 'all' | Invoice['type'];
+  status: 'all' | Invoice['status'];
+  paymentMethod: 'all' | NonNullable<Invoice['paymentMethod']>;
+}
+
+export interface InvoiceSummary {
+  filteredCount: number;
+  filteredTotal: number;
+  todayCount: number;
+  todayTotal: number;
+  paidTotal: number;
+  pendingTotal: number;
+}
+
 export interface GoogleSheetsResponse {
   success: boolean;
   data?: any;

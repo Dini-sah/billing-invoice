@@ -28,7 +28,10 @@ function App() {
     total,
     setPage,
     search,
-    setSearch
+    setSearch,
+    filters,
+    setFilters,
+    summary
   } = useInvoices();
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -120,6 +123,9 @@ function App() {
             onPageChange={setPage}
             search={search}
             onSearchChange={setSearch}
+            filters={filters}
+            onFiltersChange={setFilters}
+            summary={summary}
           />
         )}
       </main>

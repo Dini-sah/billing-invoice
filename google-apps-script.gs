@@ -119,6 +119,13 @@ function doGet(e) {
       var page = Math.max(1, Number(e.parameter.page || 1));
       var limit = Math.min(100, Math.max(1, Number(e.parameter.limit || 20)));
       var search = String(e.parameter.search || '').trim().toLowerCase();
+      var startDate = String(e.parameter.startDate || '');
+      var endDate = String(e.parameter.endDate || '');
+      var typeFilter = String(e.parameter.type || 'all').toLowerCase();
+      var statusFilter = String(e.parameter.status || 'all').toLowerCase();
+      var paymentMethodFilter = String(e.parameter.paymentMethod || 'all').toLowerCase();
+      var timezone = Session.getScriptTimeZone();
+      var todayKey = Utilities.formatDate(new Date(), timezone, 'yyyy-MM-dd');
 
       var rows = values.slice(1).map(function(row) {
         var createdAt = '';
@@ -150,42 +157,150 @@ function doGet(e) {
       });
 
       var ordered = rows.reverse();
-      var sourceRows = search ? ordered : ordered.slice(0, 100);
-      var filtered = search
-        ? sourceRows.filter(function(row) {
-            var itemsText = (row.items || [])
-              .map(function(item) {
-                return (item.description || '') + ' ' + (item.productType || '');
-              })
-              .join(' ');
-            var haystack = [
-              row.id,
-              row.customerName,
-              row.phoneNumber,
-              row.date,
-              row.createdAt,
-              row.type,
-              row.status,
-              row.paymentMethod,
-              itemsText
-            ]
-              .join(' ')
-              .toLowerCase();
-            return haystack.indexOf(search) !== -1;
-          })
-        : sourceRows;
+      var searched = search
+        ? ordered.filter(function(row) {
+          return rowMatchesSearch_(row, search);
+        })
+        : ordered;
+
+      var todayRows = searched.filter(function(row) {
+        return getInvoiceDateKey_(row, timezone) === todayKey &&
+          rowMatchesOptionFilters_(row, typeFilter, statusFilter, paymentMethodFilter);
+      });
+
+      var filtered = searched.filter(function(row) {
+        return rowMatchesDateFilters_(row, timezone, startDate, endDate) &&
+          rowMatchesOptionFilters_(row, typeFilter, statusFilter, paymentMethodFilter);
+      });
+
+      var summary = buildSummary_(filtered, todayRows);
 
       var total = filtered.length;
       var startIndex = (page - 1) * limit;
       var data = filtered.slice(startIndex, startIndex + limit);
 
-      return jsonResponse_({ success: true, data: data, total: total, page: page, limit: limit });
+      return jsonResponse_({
+        success: true,
+        data: data,
+        total: total,
+        page: page,
+        limit: limit,
+        summary: summary
+      });
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse_({ success: false, error: String(err && err.stack ? err.stack : err) });
   }
+}
+
+function rowMatchesSearch_(row, search) {
+  var itemsText = (row.items || [])
+    .map(function(item) {
+      return (item.description || '') + ' ' + (item.productType || '');
+    })
+    .join(' ');
+  var haystack = [
+    row.id,
+    row.customerName,
+    row.phoneNumber,
+    row.date,
+    row.createdAt,
+    row.type,
+    row.status,
+    row.paymentMethod,
+    itemsText
+  ]
+    .join(' ')
+    .toLowerCase();
+  return haystack.indexOf(search) !== -1;
+}
+
+function rowMatchesOptionFilters_(row, typeFilter, statusFilter, paymentMethodFilter) {
+  if (typeFilter !== 'all' && String(row.type || '').toLowerCase() !== typeFilter) {
+    return false;
+  }
+
+  if (statusFilter !== 'all' && String(row.status || '').toLowerCase() !== statusFilter) {
+    return false;
+  }
+
+  if (
+    paymentMethodFilter !== 'all' &&
+    String(row.paymentMethod || '').toLowerCase() !== paymentMethodFilter
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function rowMatchesDateFilters_(row, timezone, startDate, endDate) {
+  if (!startDate && !endDate) {
+    return true;
+  }
+
+  var invoiceDateKey = getInvoiceDateKey_(row, timezone);
+  if (!invoiceDateKey) {
+    return false;
+  }
+
+  if (startDate && invoiceDateKey < startDate) {
+    return false;
+  }
+
+  if (endDate && invoiceDateKey > endDate) {
+    return false;
+  }
+
+  return true;
+}
+
+function getInvoiceDateKey_(row, timezone) {
+  var dateValue = row.createdAt || row.date || '';
+  if (!dateValue) {
+    return '';
+  }
+
+  var parsedDate = new Date(dateValue);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return Utilities.formatDate(parsedDate, timezone, 'yyyy-MM-dd');
+  }
+
+  var dateText = String(dateValue);
+  var dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateText);
+  return dateOnlyMatch ? dateOnlyMatch[1] + '-' + dateOnlyMatch[2] + '-' + dateOnlyMatch[3] : '';
+}
+
+function buildSummary_(filteredRows, todayRows) {
+  var filteredTotal = sumInvoiceTotals_(filteredRows);
+  var todayTotal = sumInvoiceTotals_(todayRows);
+  var paidTotal = sumInvoiceTotals_(
+    filteredRows.filter(function(row) {
+      return String(row.status || '').toLowerCase() === 'paid';
+    })
+  );
+  var pendingTotal = sumInvoiceTotals_(
+    filteredRows.filter(function(row) {
+      return String(row.status || '').toLowerCase() === 'pending';
+    })
+  );
+
+  return {
+    filteredCount: filteredRows.length,
+    filteredTotal: filteredTotal,
+    todayCount: todayRows.length,
+    todayTotal: todayTotal,
+    paidTotal: paidTotal,
+    pendingTotal: pendingTotal
+  };
+}
+
+function sumInvoiceTotals_(rows) {
+  return rows.reduce(function(total, row) {
+    return total + Number(row.total || 0);
+  }, 0);
 }
 
 function jsonResponse_(obj) {

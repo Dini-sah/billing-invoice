@@ -4,6 +4,24 @@ import { InvoiceFilters, InvoiceSummary } from '../types/invoice';
 
 const GOOGLE_SCRIPT_URL = 'https://invoice-proxy.harielectronics.workers.dev/';
 
+const emptySummary: InvoiceSummary = {
+  filteredCount: 0,
+  filteredTotal: 0,
+  todayCount: 0,
+  todayTotal: 0,
+  cashTotal: 0,
+  gpayTotal: 0,
+  cardTotal: 0,
+  bankTransferTotal: 0,
+  otherPaymentTotal: 0
+};
+
+const normalizeSummary = (summary: Partial<InvoiceSummary> | undefined, total = 0): InvoiceSummary => ({
+  ...emptySummary,
+  filteredCount: total,
+  ...summary
+});
+
 export interface GoogleSheetsResponse {
   success: boolean;
   data?: any;
@@ -110,14 +128,7 @@ export const fetchRecentInvoices = async (
       success: true,
       data: data.data || [],
       total: Number(data.total || 0),
-      summary: data.summary || {
-        filteredCount: Number(data.total || 0),
-        filteredTotal: 0,
-        todayCount: 0,
-        todayTotal: 0,
-        paidTotal: 0,
-        pendingTotal: 0
-      },
+      summary: normalizeSummary(data.summary, Number(data.total || 0)),
       page: Number(data.page || page),
       limit: Number(data.limit || limit)
     };

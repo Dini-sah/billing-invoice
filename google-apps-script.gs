@@ -276,25 +276,46 @@ function getInvoiceDateKey_(row, timezone) {
 function buildSummary_(filteredRows, todayRows) {
   var filteredTotal = sumInvoiceTotals_(filteredRows);
   var todayTotal = sumInvoiceTotals_(todayRows);
-  var paidTotal = sumInvoiceTotals_(
-    filteredRows.filter(function(row) {
-      return String(row.status || '').toLowerCase() === 'paid';
-    })
-  );
-  var pendingTotal = sumInvoiceTotals_(
-    filteredRows.filter(function(row) {
-      return String(row.status || '').toLowerCase() === 'pending';
-    })
-  );
+  var paymentTotals = buildPaymentTotals_(filteredRows);
 
   return {
     filteredCount: filteredRows.length,
     filteredTotal: filteredTotal,
     todayCount: todayRows.length,
     todayTotal: todayTotal,
-    paidTotal: paidTotal,
-    pendingTotal: pendingTotal
+    cashTotal: paymentTotals.cash,
+    gpayTotal: paymentTotals.gpay,
+    cardTotal: paymentTotals.card,
+    bankTransferTotal: paymentTotals.bankTransfer,
+    otherPaymentTotal: paymentTotals.other
   };
+}
+
+function buildPaymentTotals_(rows) {
+  return rows.reduce(function(totals, row) {
+    var paymentMethod = String(row.paymentMethod || '').toLowerCase();
+    var amount = Number(row.total || 0);
+
+    if (paymentMethod === 'cash') {
+      totals.cash += amount;
+    } else if (paymentMethod === 'gpay') {
+      totals.gpay += amount;
+    } else if (paymentMethod === 'card') {
+      totals.card += amount;
+    } else if (paymentMethod === 'bank transfer') {
+      totals.bankTransfer += amount;
+    } else if (paymentMethod === 'other') {
+      totals.other += amount;
+    }
+
+    return totals;
+  }, {
+    cash: 0,
+    gpay: 0,
+    card: 0,
+    bankTransfer: 0,
+    other: 0
+  });
 }
 
 function sumInvoiceTotals_(rows) {

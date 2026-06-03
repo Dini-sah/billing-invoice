@@ -37,8 +37,11 @@ export interface InvoiceSummary {
   filteredTotal: number;
   todayCount: number;
   todayTotal: number;
-  paidTotal: number;
-  pendingTotal: number;
+  cashTotal: number;
+  gpayTotal: number;
+  cardTotal: number;
+  bankTransferTotal: number;
+  otherPaymentTotal: number;
 }
 
 export interface GoogleSheetsResponse {

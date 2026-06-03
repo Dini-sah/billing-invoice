@@ -2,24 +2,38 @@ import { useState, useEffect } from 'react';
 import { Invoice, InvoiceFilters, InvoiceSummary } from '../types/invoice';
 import { storage, CACHE_KEYS, CACHE_DURATION } from '../utils/storage';
 import { fetchRecentInvoices } from '../utils/googleSheets';
+import { getTodayDateInputValue } from '../utils/date';
 
-const defaultFilters: InvoiceFilters = {
-  dateRange: 'all',
-  startDate: '',
-  endDate: '',
-  type: 'all',
-  status: 'all',
-  paymentMethod: 'all'
+const createDefaultFilters = (): InvoiceFilters => {
+  const today = getTodayDateInputValue();
+  return {
+    dateRange: 'today',
+    startDate: today,
+    endDate: today,
+    type: 'all',
+    status: 'all',
+    paymentMethod: 'all'
+  };
 };
+
+const defaultFilters = createDefaultFilters();
 
 const defaultSummary: InvoiceSummary = {
   filteredCount: 0,
   filteredTotal: 0,
   todayCount: 0,
   todayTotal: 0,
-  paidTotal: 0,
-  pendingTotal: 0
+  cashTotal: 0,
+  gpayTotal: 0,
+  cardTotal: 0,
+  bankTransferTotal: 0,
+  otherPaymentTotal: 0
 };
+
+const normalizeSummary = (summary: Partial<InvoiceSummary> | undefined): InvoiceSummary => ({
+  ...defaultSummary,
+  ...summary
+});
 
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -62,7 +76,7 @@ export const useInvoices = () => {
       if (cached) {
         setInvoices(cached.invoices || []);
         setTotal(cached.total || 0);
-        setSummary(cached.summary || defaultSummary);
+        setSummary(normalizeSummary(cached.summary));
         return;
       }
     }
@@ -75,11 +89,11 @@ export const useInvoices = () => {
       if (result.success && result.data) {
         setInvoices(result.data);
         setTotal(result.total || 0);
-        setSummary(result.summary || defaultSummary);
+        setSummary(normalizeSummary(result.summary));
         storage.set(cacheKeyForPage(pageNumber, searchTerm, nextFilters), {
           invoices: result.data,
           total: result.total || 0,
-          summary: result.summary || defaultSummary
+          summary: normalizeSummary(result.summary)
         });
         storage.set(cacheKeyForLastFetch(pageNumber, searchTerm, nextFilters), now);
       } else {
@@ -121,10 +135,11 @@ export const useInvoices = () => {
       loadInvoices(1, true, search, nextFilters);
     },
     refresh: () => {
+      const nextDefaultFilters = createDefaultFilters();
       setSearch('');
-      setFiltersState(defaultFilters);
+      setFiltersState(nextDefaultFilters);
       setPage(1);
-      loadInvoices(1, true, '', defaultFilters);
+      loadInvoices(1, true, '', nextDefaultFilters);
     }
   };
 };

@@ -47,14 +47,38 @@ interface InvoiceListProps {
 
 const currency = (value: number) => `Rs. ${value.toFixed(2)}`;
 
-const emptyFilters: InvoiceFilters = {
-  dateRange: "all",
-  startDate: "",
-  endDate: "",
-  type: "all",
-  status: "all",
-  paymentMethod: "all",
+const createDefaultFilters = (): InvoiceFilters => {
+  const today = getTodayDateInputValue();
+  return {
+    dateRange: "today",
+    startDate: today,
+    endDate: today,
+    type: "all",
+    status: "all",
+    paymentMethod: "all",
+  };
 };
+
+const getFilterLabel = (filters: InvoiceFilters) => {
+  if (filters.dateRange === "today") return "Today";
+  if (filters.dateRange === "yesterday") return "Yesterday";
+  if (filters.dateRange === "last7") return "Last 7 days";
+  if (filters.dateRange === "custom") {
+    if (filters.startDate && filters.endDate) {
+      return `${filters.startDate} to ${filters.endDate}`;
+    }
+    return "Custom range";
+  }
+  return "All dates";
+};
+
+const getActiveFilterCount = (filters: InvoiceFilters) =>
+  [
+    filters.dateRange !== "today",
+    filters.type !== "all",
+    filters.status !== "all",
+    filters.paymentMethod !== "all",
+  ].filter(Boolean).length;
 
 const getDateRangeValues = (dateRange: InvoiceFilters["dateRange"]) => {
   const today = new Date();
@@ -125,12 +149,8 @@ export const InvoiceList = ({
     });
   };
 
-  const activeFilterCount = [
-    filters.dateRange !== "all",
-    filters.type !== "all",
-    filters.status !== "all",
-    filters.paymentMethod !== "all",
-  ].filter(Boolean).length;
+  const activeFilterCount = getActiveFilterCount(filters);
+  const filterLabel = getFilterLabel(filters);
 
   if (loading) {
     return (
@@ -167,25 +187,23 @@ export const InvoiceList = ({
     <div className="mx-auto max-w-5xl">
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryTile
-          label="Today bills"
-          value={String(summary.todayCount)}
-          helper={currency(summary.todayTotal)}
+          label={`${filterLabel} bills`}
+          value={String(summary.filteredCount)}
+          helper="Matching invoices"
         />
         <SummaryTile
-          label="Filtered total"
+          label={`${filterLabel} total`}
           value={currency(summary.filteredTotal)}
-          helper={`${summary.filteredCount} invoice${
-            summary.filteredCount === 1 ? "" : "s"
-          }`}
+          helper="All payment methods"
         />
         <SummaryTile
-          label="Paid total"
-          value={currency(summary.paidTotal)}
+          label="Cash total"
+          value={currency(summary.cashTotal)}
           helper="Matching filters"
         />
         <SummaryTile
-          label="Pending total"
-          value={currency(summary.pendingTotal)}
+          label="GPay total"
+          value={currency(summary.gpayTotal)}
           helper="Matching filters"
         />
       </div>
@@ -248,11 +266,11 @@ export const InvoiceList = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => updateFilters(emptyFilters)}
+                onClick={() => updateFilters(createDefaultFilters())}
                 className="w-full justify-center sm:w-auto"
               >
                 <X className="mr-2 h-4 w-4" />
-                Clear filters
+                Reset to today
               </Button>
             )}
           </div>
@@ -270,11 +288,11 @@ export const InvoiceList = ({
                     <SelectValue placeholder="Date" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All dates</SelectItem>
                     <SelectItem value="today">Today</SelectItem>
                     <SelectItem value="yesterday">Yesterday</SelectItem>
                     <SelectItem value="last7">Last 7 days</SelectItem>
                     <SelectItem value="custom">Custom range</SelectItem>
+                    <SelectItem value="all">All dates</SelectItem>
                   </SelectContent>
                 </Select>
 

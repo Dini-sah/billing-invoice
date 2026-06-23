@@ -126,6 +126,7 @@ function App() {
             filters={filters}
             onFiltersChange={setFilters}
             summary={summary}
+            onCreateInvoice={() => setActiveTab("create")}
           />
         )}
       </main>

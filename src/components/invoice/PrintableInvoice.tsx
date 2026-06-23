@@ -1,5 +1,6 @@
 import { Invoice } from "../../types/invoice";
 import { formatDateTime } from "../../utils/date";
+import { formatCurrency, getLineSubtotal } from "../../utils/invoiceMath";
 import HELogoBlack from "../../assets/images/HElogoBlack.webp";
 
 export const PrintableInvoice = ({
@@ -161,15 +162,15 @@ export const PrintableInvoice = ({
           </thead>
           <tbody>
             {invoice.items.map((item, index) => {
-              const itemTotal = item.quantity * item.price;
+              const itemTotal = getLineSubtotal(item);
               return (
                 <tr key={index}>
                   <td>{item.description}</td>
                   <td>{item.productType}</td>
                   <td className="invoice-print-center">{item.quantity}</td>
-                  <td className="invoice-print-right">₹{item.price.toFixed(2)}</td>
+                  <td className="invoice-print-right">{formatCurrency(item.price)}</td>
                   <td className="invoice-print-right">
-                    <strong>₹{itemTotal.toFixed(2)}</strong>
+                    <strong>{formatCurrency(itemTotal)}</strong>
                   </td>
                 </tr>
               );
@@ -180,15 +181,15 @@ export const PrintableInvoice = ({
         <div className="invoice-print-totals">
           <div className="invoice-print-row">
             <span>Subtotal</span>
-            <strong>₹{invoice.subtotal.toFixed(2)}</strong>
+            <strong>{formatCurrency(invoice.subtotal)}</strong>
           </div>
           <div className="invoice-print-row">
             <span>Tax (3.5%)</span>
-            <strong>₹{invoice.taxTotal.toFixed(2)}</strong>
+            <strong>{formatCurrency(invoice.taxTotal)}</strong>
           </div>
           <div className="invoice-print-row invoice-print-grand">
             <span>Total</span>
-            <span>₹{invoice.total.toFixed(2)}</span>
+            <span>{formatCurrency(invoice.total)}</span>
           </div>
         </div>
       </section>

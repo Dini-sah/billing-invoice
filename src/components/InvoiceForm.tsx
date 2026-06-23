@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Invoice, InvoiceItem } from "../types/invoice";
 import { generateInvoiceId, formatDate } from "../utils/invoiceGenerator";
 import { saveInvoice } from "../utils/googleSheets";
+import { createBlankInvoiceItem, PRODUCT_TYPE_OPTIONS } from "../utils/invoiceConstants";
+import {
+  calculateInvoiceTotals,
+  formatCurrency,
+  getInvoiceType,
+} from "../utils/invoiceMath";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -24,43 +30,11 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [date, setDate] = useState(formatDate());
-  const [items, setItems] = useState<InvoiceItem[]>([
-    {
-      id: "1",
-      category: "sale",
-      description: "",
-      productType: "",
-      quantity: 1,
-      price: 0,
-      taxable: false,
-    },
-  ]);
+  const [items, setItems] = useState<InvoiceItem[]>([createBlankInvoiceItem("1")]);
   const [saving, setSaving] = useState(false);
 
-  const productTypeOptions: Record<"sale" | "service", string[]> = {
-    sale: ["Phone cases", "Tempered glass", "Mobile phones", "Accessories", "Other"],
-    service: [
-      "Combo replacement",
-      "OCA",
-      "Battery replacement",
-      "Software service",
-      "Water damage",
-      "CC (Charging connector)",
-      "Other",
-    ],
-  };
-
   const addItem = () => {
-    const newItem: InvoiceItem = {
-      id: Date.now().toString(),
-      category: "sale",
-      description: "",
-      productType: "",
-      quantity: 1,
-      price: 0,
-      taxable: false,
-    };
-    setItems([...items, newItem]);
+    setItems([...items, createBlankInvoiceItem()]);
   };
 
   const removeItem = (id: string) => {
@@ -71,19 +45,6 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
 
   const updateItem = (id: string, updatedItem: InvoiceItem) => {
     setItems(items.map((item) => (item.id === id ? updatedItem : item)));
-  };
-
-  const calculateTotals = () => {
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * item.price,
-      0
-    );
-    const taxTotal = items.reduce((sum, item) => {
-      const itemTotal = item.quantity * item.price;
-      return sum + (item.taxable ? itemTotal * 0.035 : 0);
-    }, 0);
-    const total = subtotal + taxTotal;
-    return { subtotal, taxTotal, total };
   };
 
   const handleSave = async () => {
@@ -101,11 +62,8 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
     }
 
     setSaving(true);
-    const { subtotal, taxTotal, total } = calculateTotals();
-
-    const categories = new Set(items.map((item) => item.category));
-    const invoiceType: Invoice["type"] =
-      categories.size > 1 ? "sale & service" : (items[0]?.category || "sale");
+    const validItems = items.filter((item) => item.description.trim());
+    const { subtotal, taxTotal, total } = calculateInvoiceTotals(validItems);
 
     const invoice: Invoice = {
       id: generateInvoiceId(),
@@ -113,8 +71,8 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
       phoneNumber: phoneNumber.trim(),
       date,
       createdAt: new Date().toLocaleString("sv-SE").replace(" ", "T"),
-      type: invoiceType,
-      items: items.filter((item) => item.description.trim()),
+      type: getInvoiceType(validItems),
+      items: validItems,
       subtotal,
       taxTotal,
       total,
@@ -128,17 +86,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
         onSave(invoice);
         setCustomerName("");
         setPhoneNumber("");
-        setItems([
-          {
-            id: "1",
-            category: "sale",
-            description: "",
-            productType: "",
-            quantity: 1,
-            price: 0,
-            taxable: false,
-          },
-        ]);
+        setItems([createBlankInvoiceItem("1")]);
       } else {
         showToast(result.error || "Failed to save invoice", "error");
       }
@@ -149,7 +97,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
     }
   };
 
-  const { subtotal, taxTotal, total } = calculateTotals();
+  const { subtotal, taxTotal, total } = calculateInvoiceTotals(items);
 
   return (
     <div className="mx-auto max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -244,7 +192,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
               <InvoiceItemRow
                 key={item.id}
                 item={item}
-                productTypeOptions={productTypeOptions}
+                productTypeOptions={PRODUCT_TYPE_OPTIONS}
                 onChange={(updatedItem) => updateItem(item.id, updatedItem)}
                 onRemove={() => removeItem(item.id)}
                 canRemove={items.length > 1}
@@ -257,19 +205,15 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal</span>
-              <span className="font-medium text-gray-900">
-                ₹{subtotal.toFixed(2)}
-              </span>
+              <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
               <span>Tax (3.5%)</span>
-              <span className="font-medium text-gray-900">
-                ₹{taxTotal.toFixed(2)}
-              </span>
+              <span className="font-medium text-gray-900">{formatCurrency(taxTotal)}</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-950">
               <span>Total</span>
-              <span className="text-emerald-700">₹{total.toFixed(2)}</span>
+              <span className="text-emerald-700">{formatCurrency(total)}</span>
             </div>
           </div>
         </div>
@@ -281,17 +225,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
             onClick={() => {
               setCustomerName("");
               setPhoneNumber("");
-              setItems([
-                {
-                  id: "1",
-                  category: "sale",
-                  description: "",
-                  productType: "",
-                  quantity: 1,
-                  price: 0,
-                  taxable: false,
-                },
-              ]);
+              setItems([createBlankInvoiceItem("1")]);
             }}
             className="sm:w-32"
           >

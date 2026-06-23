@@ -21,12 +21,17 @@ import {
   Smartphone,
   WalletCards,
   X,
+  Plus,
 } from "lucide-react";
+import { getRelativeDate } from "../utils/date";
 import {
-  getRelativeDate,
-  getTodayDateInputValue,
-  toDateInputValue,
-} from "../utils/date";
+  createDefaultFilters,
+  getActiveFilterCount,
+  getDateRangeValues,
+  getFilterLabel,
+} from "../utils/invoiceFilters";
+import { formatCurrency } from "../utils/invoiceMath";
+import { InvoiceInsights } from "./InvoiceInsights";
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -43,69 +48,8 @@ interface InvoiceListProps {
   filters: InvoiceFilters;
   onFiltersChange: (filters: InvoiceFilters) => void;
   summary: InvoiceSummary;
+  onCreateInvoice: () => void;
 }
-
-const currency = (value: number) => `Rs. ${value.toFixed(2)}`;
-
-const createDefaultFilters = (): InvoiceFilters => {
-  const today = getTodayDateInputValue();
-  return {
-    dateRange: "today",
-    startDate: today,
-    endDate: today,
-    type: "all",
-    status: "all",
-    paymentMethod: "all",
-  };
-};
-
-const getFilterLabel = (filters: InvoiceFilters) => {
-  if (filters.dateRange === "today") return "Today";
-  if (filters.dateRange === "yesterday") return "Yesterday";
-  if (filters.dateRange === "last7") return "Last 7 days";
-  if (filters.dateRange === "custom") {
-    if (filters.startDate && filters.endDate) {
-      return `${filters.startDate} to ${filters.endDate}`;
-    }
-    return "Custom range";
-  }
-  return "All dates";
-};
-
-const getActiveFilterCount = (filters: InvoiceFilters) =>
-  [
-    filters.dateRange !== "today",
-    filters.type !== "all",
-    filters.status !== "all",
-    filters.paymentMethod !== "all",
-  ].filter(Boolean).length;
-
-const getDateRangeValues = (dateRange: InvoiceFilters["dateRange"]) => {
-  const today = new Date();
-
-  if (dateRange === "today") {
-    const value = getTodayDateInputValue();
-    return { startDate: value, endDate: value };
-  }
-
-  if (dateRange === "yesterday") {
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const value = toDateInputValue(yesterday);
-    return { startDate: value, endDate: value };
-  }
-
-  if (dateRange === "last7") {
-    const start = new Date(today);
-    start.setDate(today.getDate() - 6);
-    return {
-      startDate: toDateInputValue(start),
-      endDate: toDateInputValue(today),
-    };
-  }
-
-  return { startDate: "", endDate: "" };
-};
 
 export const InvoiceList = ({
   invoices,
@@ -122,6 +66,7 @@ export const InvoiceList = ({
   filters,
   onFiltersChange,
   summary,
+  onCreateInvoice,
 }: InvoiceListProps) => {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const [searchInput, setSearchInput] = useState(search);
@@ -139,6 +84,15 @@ export const InvoiceList = ({
   const updateFilters = (nextFilters: InvoiceFilters) => {
     setDraftFilters(nextFilters);
     onFiltersChange(nextFilters);
+  };
+
+  const runSearch = () => {
+    onSearchChange(searchInput.trim());
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    // onSearchChange("");
   };
 
   const handleDateRangeChange = (dateRange: InvoiceFilters["dateRange"]) => {
@@ -185,28 +139,7 @@ export const InvoiceList = ({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SummaryTile
-          label={`${filterLabel} bills`}
-          value={String(summary.filteredCount)}
-          helper="Matching invoices"
-        />
-        <SummaryTile
-          label={`${filterLabel} total`}
-          value={currency(summary.filteredTotal)}
-          helper="All payment methods"
-        />
-        <SummaryTile
-          label="Cash total"
-          value={currency(summary.cashTotal)}
-          helper="Matching filters"
-        />
-        <SummaryTile
-          label="GPay total"
-          value={currency(summary.gpayTotal)}
-          helper="Matching filters"
-        />
-      </div>
+      <InvoiceInsights summary={summary} filterLabel={filterLabel} />
 
       <div className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -217,18 +150,39 @@ export const InvoiceList = ({
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button onClick={onCreateInvoice} className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              New Invoice
+            </Button>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
                 placeholder="Search invoice, customer, phone, item..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 sm:w-80"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    runSearch();
+                  }
+                }}
+                className="w-full pl-9 pr-10 sm:w-80"
               />
+              {searchInput && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <Button
-              onClick={() => onSearchChange(searchInput)}
-              disabled={!searchInput}
+              onClick={runSearch}
+              disabled={!searchInput.trim()}
               variant="outline"
               className="w-full sm:w-auto"
             >
@@ -393,6 +347,10 @@ export const InvoiceList = ({
             <p className="text-gray-600">
               No invoices match {filterLabel.toLowerCase()}. Change the search or filters to see more invoices.
             </p>
+            <Button onClick={onCreateInvoice} className="mt-5">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -464,7 +422,7 @@ export const InvoiceList = ({
                         Total
                       </p>
                       <p className="text-2xl font-bold text-emerald-700">
-                        {currency(invoice.total)}
+                        {formatCurrency(invoice.total)}
                       </p>
                     </div>
                     <Button
@@ -515,19 +473,3 @@ export const InvoiceList = ({
     </div>
   );
 };
-
-const SummaryTile = ({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-}) => (
-  <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-    <p className="text-xs font-semibold uppercase text-gray-500">{label}</p>
-    <p className="mt-1 truncate text-xl font-bold text-gray-950">{value}</p>
-    <p className="mt-1 text-sm text-gray-500">{helper}</p>
-  </div>
-);

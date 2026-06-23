@@ -2,6 +2,7 @@ import { InvoiceItem } from "../types/invoice";
 import { Minus, Plus, X } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { formatCurrency, getLineSubtotal, getLineTax } from "../utils/invoiceMath";
 import {
   Select,
   SelectContent,
@@ -29,8 +30,8 @@ export const InvoiceItemRow = ({
     onChange({ ...item, ...updates });
   };
 
-  const itemTotal = item.quantity * item.price;
-  const taxAmount = item.taxable ? itemTotal * 0.035 : 0;
+  const itemTotal = getLineSubtotal(item);
+  const taxAmount = getLineTax(item);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
@@ -137,7 +138,7 @@ export const InvoiceItemRow = ({
                 Line Total
               </div>
               <div className="text-lg font-bold text-gray-950">
-                ₹{itemTotal.toFixed(2)}
+                {formatCurrency(itemTotal)}
               </div>
             </div>
           </div>
@@ -154,7 +155,7 @@ export const InvoiceItemRow = ({
             </label>
             {item.taxable && (
               <div className="text-sm font-medium text-emerald-700">
-                Tax: ₹{taxAmount.toFixed(2)}
+                Tax: {formatCurrency(taxAmount)}
               </div>
             )}
           </div>

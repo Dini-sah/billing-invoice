@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
 import { Invoice } from "../../types/invoice";
+import { formatCurrency, getLineSubtotal } from "../../utils/invoiceMath";
 
 export const InfoBlock = ({
   label,
@@ -38,15 +39,15 @@ export const InvoiceItemsTable = ({ invoice }: { invoice: Invoice }) => (
           </thead>
           <tbody>
             {invoice.items.map((item, index) => {
-              const itemTotal = item.quantity * item.price;
+              const itemTotal = getLineSubtotal(item);
               return (
                 <tr key={index} className="border-t">
                   <td className="p-3">{item.description}</td>
                   <td className="p-3 text-center capitalize">{item.productType}</td>
                   <td className="p-3 text-center">{item.quantity}</td>
-                  <td className="p-3 text-right">₹{item.price.toFixed(2)}</td>
+                  <td className="p-3 text-right">{formatCurrency(item.price)}</td>
                   <td className="p-3 text-right font-semibold text-gray-950">
-                    ₹{itemTotal.toFixed(2)}
+                    {formatCurrency(itemTotal)}
                   </td>
                 </tr>
               );
@@ -77,19 +78,18 @@ export const InvoiceTotals = ({ invoice }: { invoice: Invoice }) => (
     <div className="flex justify-between text-sm text-gray-600">
       <span>Subtotal</span>
       <span className="font-medium text-gray-900">
-        ₹{invoice.subtotal.toFixed(2)}
+        {formatCurrency(invoice.subtotal)}
       </span>
     </div>
     <div className="flex justify-between text-sm text-gray-600">
       <span>Tax (3.5%)</span>
       <span className="font-medium text-gray-900">
-        ₹{invoice.taxTotal.toFixed(2)}
+        {formatCurrency(invoice.taxTotal)}
       </span>
     </div>
     <div className="flex justify-between border-t border-gray-200 pt-3 text-xl font-bold text-gray-950">
       <span>Total Amount</span>
-      <span className="text-emerald-700">₹{invoice.total.toFixed(2)}</span>
+      <span className="text-emerald-700">{formatCurrency(invoice.total)}</span>
     </div>
   </div>
 );
-

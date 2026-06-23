@@ -5,6 +5,7 @@
 
 const SHEET_ID = '1uIGqqdHJ3eZabPCFYfwwZIVaGnq1NHlI2B8LbciWtxY';
 const SHEET_NAME = 'Invoices';
+const CASHBOOK_SHEET_NAME = 'Cashbook';
 
 const COL = {
   invoiceId: 1,
@@ -21,6 +22,18 @@ const COL = {
   paymentMethod: 12
 };
 
+const CASHBOOK_COL = {
+  id: 1,
+  type: 2,
+  date: 3,
+  title: 4,
+  category: 5,
+  amount: 6,
+  paymentMethod: 7,
+  note: 8,
+  createdAt: 9
+};
+
 function getSheet_() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -29,6 +42,37 @@ function getSheet_() {
   }
   ensurePaymentMethodHeader_(sheet);
   return sheet;
+}
+
+function getCashbookSheet_() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(CASHBOOK_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CASHBOOK_SHEET_NAME);
+  }
+  ensureCashbookHeaders_(sheet);
+  return sheet;
+}
+
+function ensureCashbookHeaders_(sheet) {
+  var headers = [
+    'ID',
+    'Type',
+    'Date',
+    'Title',
+    'Category',
+    'Amount',
+    'Payment Method',
+    'Note',
+    'CreatedAt'
+  ];
+  var existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  var needsHeaders = existing.every(function(value) {
+    return !String(value || '').trim();
+  });
+  if (needsHeaders) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
 }
 
 function ensurePaymentMethodHeader_(sheet) {
@@ -96,6 +140,47 @@ function doPost(e) {
       }
 
       return jsonResponse_({ success: false, error: 'Invoice not found: ' + invoiceId });
+    }
+
+    if (payload.action === 'saveCashbookEntry') {
+      var entry = payload.data || {};
+      if (!entry.id || !entry.type || !entry.date || !entry.title || !entry.amount) {
+        return jsonResponse_({ success: false, error: 'Missing required cashbook entry fields' });
+      }
+
+      var cashbookSheet = getCashbookSheet_();
+      cashbookSheet.appendRow([
+        entry.id || '',
+        entry.type || '',
+        entry.date || '',
+        entry.title || '',
+        entry.category || '',
+        Number(entry.amount || 0),
+        entry.paymentMethod || '',
+        entry.note || '',
+        entry.createdAt || new Date()
+      ]);
+
+      return jsonResponse_({ success: true, data: entry });
+    }
+
+    if (payload.action === 'deleteCashbookEntry') {
+      var deleteData = payload.data || {};
+      var entryId = deleteData.entryId || '';
+      if (!entryId) {
+        return jsonResponse_({ success: false, error: 'Missing entryId' });
+      }
+
+      var deleteSheet = getCashbookSheet_();
+      var deleteValues = deleteSheet.getDataRange().getValues();
+      for (var d = 1; d < deleteValues.length; d++) {
+        if (String(deleteValues[d][CASHBOOK_COL.id - 1]) === String(entryId)) {
+          deleteSheet.deleteRow(d + 1);
+          return jsonResponse_({ success: true, entryId: entryId });
+        }
+      }
+
+      return jsonResponse_({ success: false, error: 'Cashbook entry not found: ' + entryId });
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
@@ -189,6 +274,32 @@ function doGet(e) {
       });
     }
 
+    if (action === 'getCashbookEntries') {
+      var cashbookSheet = getCashbookSheet_();
+      var cashbookValues = cashbookSheet.getDataRange().getValues();
+      if (cashbookValues.length <= 1) {
+        return jsonResponse_({ success: true, data: [] });
+      }
+
+      var cashbookRows = cashbookValues.slice(1).map(function(row) {
+        return {
+          id: row[CASHBOOK_COL.id - 1] || '',
+          type: row[CASHBOOK_COL.type - 1] || '',
+          date: normalizeDateCell_(row[CASHBOOK_COL.date - 1]),
+          title: row[CASHBOOK_COL.title - 1] || '',
+          category: row[CASHBOOK_COL.category - 1] || '',
+          amount: Number(row[CASHBOOK_COL.amount - 1] || 0),
+          paymentMethod: row[CASHBOOK_COL.paymentMethod - 1] || '',
+          note: row[CASHBOOK_COL.note - 1] || '',
+          createdAt: normalizeDateTimeCell_(row[CASHBOOK_COL.createdAt - 1])
+        };
+      }).filter(function(entry) {
+        return entry.id;
+      }).reverse();
+
+      return jsonResponse_({ success: true, data: cashbookRows });
+    }
+
     return jsonResponse_({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse_({ success: false, error: String(err && err.stack ? err.stack : err) });
@@ -271,6 +382,32 @@ function getInvoiceDateKey_(row, timezone) {
   var dateText = String(dateValue);
   var dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateText);
   return dateOnlyMatch ? dateOnlyMatch[1] + '-' + dateOnlyMatch[2] + '-' + dateOnlyMatch[3] : '';
+}
+
+function normalizeDateCell_(value) {
+  if (!value) {
+    return '';
+  }
+  var parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return Utilities.formatDate(parsedDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(value);
+}
+
+function normalizeDateTimeCell_(value) {
+  if (!value) {
+    return '';
+  }
+  var parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return Utilities.formatDate(
+      parsedDate,
+      Session.getScriptTimeZone(),
+      "yyyy-MM-dd'T'HH:mm:ss"
+    );
+  }
+  return String(value);
 }
 
 function buildSummary_(filteredRows, todayRows) {

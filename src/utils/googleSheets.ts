@@ -1,6 +1,7 @@
 // Google Sheets API integration using native fetch
 // Replace YOUR_SCRIPT_ID_HERE with your actual Google Apps Script web app URL
 import { InvoiceFilters, InvoiceSummary } from '../types/invoice';
+import { CashbookEntry } from '../types/cashbook';
 
 const GOOGLE_SCRIPT_URL = 'https://invoice-proxy.harielectronics.workers.dev/';
 
@@ -138,6 +139,95 @@ export const fetchRecentInvoices = async (
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+};
+
+export const fetchCashbookEntries = async (): Promise<GoogleSheetsResponse> => {
+  try {
+    const params = new URLSearchParams({
+      action: 'getCashbookEntries'
+    });
+
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to fetch cashbook entries' };
+    }
+
+    return { success: true, data: data.data || [] };
+  } catch (error) {
+    console.error('Error fetching cashbook entries:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+export const saveCashbookEntry = async (
+  entry: CashbookEntry
+): Promise<GoogleSheetsResponse> => {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'saveCashbookEntry',
+        data: entry
+      })
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to save cashbook entry' };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error saving cashbook entry:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+export const deleteCashbookEntry = async (
+  entryId: string
+): Promise<GoogleSheetsResponse> => {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'deleteCashbookEntry',
+        data: { entryId }
+      })
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to delete cashbook entry' };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error deleting cashbook entry:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };

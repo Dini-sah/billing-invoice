@@ -3,13 +3,21 @@ import { Invoice } from "./types/invoice";
 import { useInvoices } from "./hooks/useInvoices";
 import { InvoiceForm } from "./components/InvoiceForm";
 import { InvoiceList } from "./components/InvoiceList";
+import { Cashbook } from "./components/Cashbook";
 import { InvoiceDetailModal } from "./components/InvoiceDetailModal";
 import { Toast } from "./components/Toast";
 import { Button } from "./components/ui/button";
 import { ThemeSelector } from "./components/ThemeSelector";
-import { IndianRupee, List, Plus, ReceiptText } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  BookOpenText,
+  List,
+  Plus,
+} from "lucide-react";
 import { updateInvoiceStatus } from "./utils/googleSheets";
 import { formatCurrency } from "./utils/invoiceMath";
+import { useCashbook } from "./hooks/useCashbook";
 import {
   getThemeById,
   THEME_STORAGE_KEY,
@@ -18,7 +26,7 @@ import {
 import HELogo from "./assets/images/HElogoBlack.webp"
 
 function App() {
-  const [activeTab, setActiveTab] = useState<"create" | "list">("create");
+  const [activeTab, setActiveTab] = useState<"create" | "list" | "cashbook">("create");
   const [theme, setTheme] = useState(() =>
     getThemeById(localStorage.getItem(THEME_STORAGE_KEY))
   );
@@ -43,6 +51,7 @@ function App() {
     setFilters,
     summary
   } = useInvoices();
+  const cashbook = useCashbook(summary.todayTotal);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -108,17 +117,17 @@ function App() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 bg-gray-50 p-1">
                 <MiniMetric
-                  icon={ReceiptText}
-                  label="Today"
-                  value={`${summary.todayCount} bills`}
+                  icon={ArrowDownLeft}
+                  label="Today In"
+                  value={formatCurrency(cashbook.summary.todayIn)}
                 />
                 <MiniMetric
-                  icon={IndianRupee}
-                  label="Revenue"
-                  value={formatCurrency(summary.todayTotal)}
+                  icon={ArrowUpRight}
+                  label="Today Out"
+                  value={formatCurrency(cashbook.summary.todayOut)}
                 />
               </div>
-              <div className="grid w-full grid-cols-2 rounded-lg border border-gray-200 bg-gray-100/80 p-1 sm:w-auto sm:min-w-64">
+              <div className="grid w-full grid-cols-3 rounded-lg border border-gray-200 bg-gray-100/80 p-1 sm:w-auto sm:min-w-[25rem]">
                 <Button
                   onClick={() => setActiveTab("create")}
                   variant={activeTab === "create" ? "default" : "ghost"}
@@ -135,6 +144,14 @@ function App() {
                   <List className="w-4 h-4" />
                   Invoices
                 </Button>
+                <Button
+                  onClick={() => setActiveTab("cashbook")}
+                  variant={activeTab === "cashbook" ? "default" : "ghost"}
+                  className="h-10 gap-2 shadow-none"
+                >
+                  <BookOpenText className="w-4 h-4" />
+                  Cashbook
+                </Button>
               </div>
             </div>
           </div>
@@ -145,7 +162,7 @@ function App() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         {activeTab === "create" ? (
           <InvoiceForm onSave={handleInvoiceSaved} showToast={showToast} />
-        ) : (
+        ) : activeTab === "list" ? (
           <InvoiceList
             invoices={invoices}
             loading={loading}
@@ -162,6 +179,17 @@ function App() {
             onFiltersChange={setFilters}
             summary={summary}
             onCreateInvoice={() => setActiveTab("create")}
+          />
+        ) : (
+          <Cashbook
+            entries={cashbook.entries}
+            summary={cashbook.summary}
+            loading={cashbook.loading}
+            syncing={cashbook.syncing}
+            error={cashbook.error}
+            onRefresh={cashbook.refresh}
+            onAddEntry={cashbook.addEntry}
+            onRemoveEntry={cashbook.removeEntry}
           />
         )}
       </main>
@@ -244,7 +272,7 @@ const MiniMetric = ({
   label,
   value,
 }: {
-  icon: typeof ReceiptText;
+  icon: typeof ArrowUpRight;
   label: string;
   value: string;
 }) => (

@@ -16,6 +16,15 @@ const createDefaultFilters = (): InvoiceFilters => {
   };
 };
 
+const createAllDataFilters = (): InvoiceFilters => ({
+  dateRange: 'all',
+  startDate: '',
+  endDate: '',
+  type: 'all',
+  status: 'all',
+  paymentMethod: 'all'
+});
+
 const defaultFilters = createDefaultFilters();
 
 const defaultSummary: InvoiceSummary = {
@@ -43,7 +52,7 @@ export const useInvoices = () => {
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
-  const [filters, setFiltersState] = useState<InvoiceFilters>(defaultFilters);
+  const [ filters, setFiltersState] = useState<InvoiceFilters>(defaultFilters);
   const [summary, setSummary] = useState<InvoiceSummary>(defaultSummary);
 
   const filtersKey = (nextFilters: InvoiceFilters) =>
@@ -67,12 +76,15 @@ export const useInvoices = () => {
     searchTerm = search,
     nextFilters = filters
   ) => {
-    const lastFetch = storage.get(cacheKeyForLastFetch(pageNumber, searchTerm, nextFilters));
+    const hasSearch = searchTerm.trim().length > 0;
+    const filtersForRequest = hasSearch ? createAllDataFilters() : nextFilters;
+
+    const lastFetch = storage.get(cacheKeyForLastFetch(pageNumber, searchTerm, filtersForRequest));
     const now = Date.now();
     
     // Use cache if available and not expired
     if (!forceRefresh && lastFetch && (now - lastFetch < CACHE_DURATION)) {
-      const cached = storage.get(cacheKeyForPage(pageNumber, searchTerm, nextFilters));
+      const cached = storage.get(cacheKeyForPage(pageNumber, searchTerm, filtersForRequest));
       if (cached) {
         setInvoices(cached.invoices || []);
         setTotal(cached.total || 0);
@@ -85,7 +97,7 @@ export const useInvoices = () => {
     setError(null);
     
     try {
-      const result = await fetchRecentInvoices(pageNumber, pageSize, searchTerm, nextFilters);
+      const result = await fetchRecentInvoices(pageNumber, pageSize, searchTerm, filtersForRequest);
       if (result.success && result.data) {
         setInvoices(result.data);
         setTotal(result.total || 0);

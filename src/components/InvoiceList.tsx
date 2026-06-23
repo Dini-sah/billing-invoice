@@ -228,6 +228,7 @@ export const InvoiceList = ({
             </div>
             <Button
               onClick={() => onSearchChange(searchInput)}
+              disabled={!searchInput}
               variant="outline"
               className="w-full sm:w-auto"
             >
@@ -383,7 +384,7 @@ export const InvoiceList = ({
       {invoices.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100">
+            <div className="mt-6 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100">
               <Calendar className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="mb-2 text-lg font-semibold text-gray-950">

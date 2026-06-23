@@ -92,7 +92,9 @@ export const InvoiceList = ({
 
   const clearSearch = () => {
     setSearchInput("");
-    // onSearchChange("");
+    if (search) {
+      onSearchChange("");
+    }
   };
 
   const handleDateRangeChange = (dateRange: InvoiceFilters["dateRange"]) => {
@@ -141,7 +143,7 @@ export const InvoiceList = ({
     <div className="mx-auto max-w-5xl">
       <InvoiceInsights summary={summary} filterLabel={filterLabel} />
 
-      <div className="mb-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-5 rounded-lg border border-gray-200/80 bg-white p-4 shadow-sm shadow-gray-950/[0.03] sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-950">Recent Invoices</h2>
@@ -231,7 +233,7 @@ export const InvoiceList = ({
           </div>
 
           {filtersOpen && (
-            <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+            <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/80 p-3 sm:p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800">
                 <Filter className="h-4 w-4" />
                 Invoice filters
@@ -336,7 +338,7 @@ export const InvoiceList = ({
       </div>
 
       {invoices.length === 0 ? (
-        <Card>
+        <Card className="border-dashed bg-white/80">
           <CardContent className="p-12 text-center">
             <div className="mt-6 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100">
               <Calendar className="w-8 h-8 text-gray-400" />
@@ -358,10 +360,10 @@ export const InvoiceList = ({
           {invoices.map((invoice) => (
             <Card
               key={invoice.id}
-              className="overflow-hidden transition hover:border-emerald-200 hover:shadow-md"
+              className="group overflow-hidden transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-lg hover:shadow-gray-950/[0.06]"
             >
               <CardContent className="p-0">
-                <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
+                    <div className="grid gap-4 border-l-4 border-l-gray-200 p-4 transition group-hover:border-l-[var(--theme-primary)] sm:p-5 lg:grid-cols-[1fr_auto] lg:items-center">
                   <div className="min-w-0">
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
@@ -375,21 +377,21 @@ export const InvoiceList = ({
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
                             invoice.type === "sale"
-                              ? "bg-blue-50 text-blue-700"
+                              ? "border-blue-100 bg-blue-50 text-blue-700"
                               : invoice.type === "service"
-                              ? "bg-violet-50 text-violet-700"
-                              : "bg-amber-50 text-amber-700"
+                              ? "border-violet-100 bg-violet-50 text-violet-700"
+                              : "border-amber-100 bg-amber-50 text-amber-700"
                           }`}
                         >
                           {invoice.type}
                         </span>
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
                             invoice.status === "paid"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-yellow-50 text-yellow-700"
+                              ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                              : "border-yellow-100 bg-yellow-50 text-yellow-700"
                           }`}
                         >
                           {invoice.status}
@@ -421,7 +423,7 @@ export const InvoiceList = ({
                       <p className="text-xs font-semibold uppercase text-gray-500">
                         Total
                       </p>
-                      <p className="text-2xl font-bold text-emerald-700">
+                      <p className="text-2xl font-bold text-gray-950">
                         {formatCurrency(invoice.total)}
                       </p>
                     </div>
@@ -442,7 +444,7 @@ export const InvoiceList = ({
       )}
 
       {total > 0 && (
-        <div className="mt-5 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-5 flex flex-col gap-3 rounded-lg border border-gray-200/80 bg-white p-4 shadow-sm shadow-gray-950/[0.03] sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-600">
             Showing {(page - 1) * pageSize + 1}-
             {Math.min(page * pageSize, total)} of {total}

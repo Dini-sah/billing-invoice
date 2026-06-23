@@ -34,7 +34,7 @@ export const InvoiceItemRow = ({
   const taxAmount = getLineTax(item);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm shadow-gray-950/[0.02] sm:p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
         <div className="flex-1 space-y-3">
           <div className="grid grid-cols-1 gap-2 lg:grid-cols-[150px_190px_1fr]">
@@ -133,7 +133,7 @@ export const InvoiceItemRow = ({
               />
             </div>
 
-            <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-right">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-right">
               <div className="text-xs font-semibold uppercase text-gray-500">
                 Line Total
               </div>
@@ -144,7 +144,7 @@ export const InvoiceItemRow = ({
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={item.taxable}

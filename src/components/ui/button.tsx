@@ -10,11 +10,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const baseClasses =
-  'inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+  'inline-flex items-center justify-center rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-primary)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45 active:scale-[0.98]';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:bg-emerald-800',
-  outline: 'border border-gray-200 bg-white text-gray-800 shadow-sm hover:border-gray-300 hover:bg-gray-50',
+  default: 'bg-[var(--theme-primary)] text-white shadow-sm shadow-gray-950/10 hover:bg-[var(--theme-primary-hover)] active:bg-[var(--theme-primary)]',
+  outline: 'border border-gray-200 bg-white/90 text-gray-800 shadow-sm shadow-gray-950/[0.03] hover:border-gray-300 hover:bg-gray-50',
   ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-950'
 };
 

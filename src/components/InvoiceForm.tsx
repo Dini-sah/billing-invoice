@@ -100,25 +100,33 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
   const { subtotal, taxTotal, total } = calculateInvoiceTotals(items);
 
   return (
-    <div className="mx-auto max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-5 sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+    <div className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm shadow-gray-950/[0.03]">
+      <div className="border-b border-gray-200 bg-[var(--theme-header)] px-4 py-5 text-white sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white ring-1 ring-white/15">
             <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Create Invoice</h2>
+              <p className="text-sm text-gray-300">
+                Add customer details and billable items.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-950">Create Invoice</h2>
-            <p className="text-sm text-gray-500">
-              Add customer details and billable items.
-            </p>
+          <div className="rounded-lg border border-white/10 bg-white/10 px-4 py-2">
+            <p className="text-xs font-semibold uppercase text-gray-300">Current total</p>
+            <p className="text-lg font-bold">{formatCurrency(total)}</p>
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-6">
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
           <div className="mb-4 flex items-center gap-2">
-            <UserRound className="h-4 w-4 text-emerald-700" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
+              <UserRound className="h-4 w-4" />
+            </span>
             <h3 className="font-semibold text-gray-950">Customer Details</h3>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -152,9 +160,11 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
           </div>
         </section>
 
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
           <div className="mb-4 flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-emerald-700" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
+              <CalendarDays className="h-4 w-4" />
+            </span>
             <h3 className="font-semibold text-gray-950">Invoice Date</h3>
           </div>
           <div className="max-w-sm">
@@ -169,10 +179,12 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
           </div>
         </section>
 
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <ReceiptText className="h-4 w-4 text-emerald-700" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
+                <ReceiptText className="h-4 w-4" />
+              </span>
               <h3 className="font-semibold text-gray-950">Items & Services</h3>
             </div>
             <Button
@@ -180,7 +192,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
               onClick={addItem}
               variant="outline"
               size="sm"
-              className="w-full text-emerald-700 sm:w-auto"
+              className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add Item
@@ -201,7 +213,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
           </div>
         </section>
 
-        <div className="ml-auto max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <div className="ml-auto max-w-md rounded-lg border border-gray-200 bg-white p-4 shadow-sm shadow-gray-950/[0.03]">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal</span>
@@ -213,7 +225,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-950">
               <span>Total</span>
-              <span className="text-emerald-700">{formatCurrency(total)}</span>
+              <span className="text-[var(--theme-primary)]">{formatCurrency(total)}</span>
             </div>
           </div>
         </div>

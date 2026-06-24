@@ -143,11 +143,22 @@ export const fetchRecentInvoices = async (
   }
 };
 
-export const fetchCashbookEntries = async (): Promise<GoogleSheetsResponse> => {
+export const fetchCashbookEntries = async (filters?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<GoogleSheetsResponse> => {
   try {
     const params = new URLSearchParams({
       action: 'getCashbookEntries'
     });
+
+    if (filters?.startDate) {
+      params.set('startDate', filters.startDate);
+    }
+
+    if (filters?.endDate) {
+      params.set('endDate', filters.endDate);
+    }
 
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
       method: 'GET',

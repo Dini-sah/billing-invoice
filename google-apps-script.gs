@@ -82,6 +82,24 @@ function ensurePaymentMethodHeader_(sheet) {
   }
 }
 
+function findRowByValue_(sheet, columnNumber, value) {
+  if (!value) {
+    return null;
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return null;
+  }
+
+  var finder = sheet
+    .getRange(2, columnNumber, lastRow - 1, 1)
+    .createTextFinder(String(value))
+    .matchEntireCell(true);
+  var cell = finder.findNext();
+  return cell ? cell.getRow() : null;
+}
+
 function doPost(e) {
   try {
     var payload = JSON.parse((e.postData && e.postData.contents) || '{}');
@@ -119,24 +137,17 @@ function doPost(e) {
       }
 
       var sheet = getSheet_();
-      var values = sheet.getDataRange().getValues();
-      if (values.length <= 1) {
-        return jsonResponse_({ success: false, error: 'No data in sheet' });
-      }
-
-      for (var i = 1; i < values.length; i++) {
-        if (String(values[i][COL.invoiceId - 1]) === String(invoiceId)) {
-          var rowNumber = i + 1;
-          sheet.getRange(rowNumber, COL.status).setValue(status);
-          sheet.getRange(rowNumber, COL.paymentMethod).setValue(paymentMethod);
-          return jsonResponse_({
-            success: true,
-            invoiceId: invoiceId,
-            status: status,
-            paymentMethod: paymentMethod,
-            updatedRow: rowNumber
-          });
-        }
+      var rowNumber = findRowByValue_(sheet, COL.invoiceId, invoiceId);
+      if (rowNumber) {
+        sheet.getRange(rowNumber, COL.status).setValue(status);
+        sheet.getRange(rowNumber, COL.paymentMethod).setValue(paymentMethod);
+        return jsonResponse_({
+          success: true,
+          invoiceId: invoiceId,
+          status: status,
+          paymentMethod: paymentMethod,
+          updatedRow: rowNumber
+        });
       }
 
       return jsonResponse_({ success: false, error: 'Invoice not found: ' + invoiceId });
@@ -149,6 +160,16 @@ function doPost(e) {
       }
 
       var cashbookSheet = getCashbookSheet_();
+      var existingEntryRow = findRowByValue_(cashbookSheet, CASHBOOK_COL.id, entry.id);
+      if (existingEntryRow) {
+        return jsonResponse_({
+          success: true,
+          data: entry,
+          duplicate: true,
+          existingRow: existingEntryRow
+        });
+      }
+
       cashbookSheet.appendRow([
         entry.id || '',
         entry.type || '',
@@ -172,12 +193,10 @@ function doPost(e) {
       }
 
       var deleteSheet = getCashbookSheet_();
-      var deleteValues = deleteSheet.getDataRange().getValues();
-      for (var d = 1; d < deleteValues.length; d++) {
-        if (String(deleteValues[d][CASHBOOK_COL.id - 1]) === String(entryId)) {
-          deleteSheet.deleteRow(d + 1);
-          return jsonResponse_({ success: true, entryId: entryId });
-        }
+      var deleteRowNumber = findRowByValue_(deleteSheet, CASHBOOK_COL.id, entryId);
+      if (deleteRowNumber) {
+        deleteSheet.deleteRow(deleteRowNumber);
+        return jsonResponse_({ success: true, entryId: entryId });
       }
 
       return jsonResponse_({ success: false, error: 'Cashbook entry not found: ' + entryId });
@@ -280,6 +299,8 @@ function doGet(e) {
       if (cashbookValues.length <= 1) {
         return jsonResponse_({ success: true, data: [] });
       }
+      var cashbookStartDate = String(e.parameter.startDate || '');
+      var cashbookEndDate = String(e.parameter.endDate || '');
 
       var cashbookRows = cashbookValues.slice(1).map(function(row) {
         return {
@@ -294,7 +315,7 @@ function doGet(e) {
           createdAt: normalizeDateTimeCell_(row[CASHBOOK_COL.createdAt - 1])
         };
       }).filter(function(entry) {
-        return entry.id;
+        return entry.id && rowMatchesCashbookDateFilters_(entry, cashbookStartDate, cashbookEndDate);
       }).reverse();
 
       return jsonResponse_({ success: true, data: cashbookRows });
@@ -408,6 +429,23 @@ function normalizeDateTimeCell_(value) {
     );
   }
   return String(value);
+}
+
+function rowMatchesCashbookDateFilters_(entry, startDate, endDate) {
+  var entryDate = String(entry.date || '');
+  if (!entryDate) {
+    return false;
+  }
+
+  if (startDate && entryDate < startDate) {
+    return false;
+  }
+
+  if (endDate && entryDate > endDate) {
+    return false;
+  }
+
+  return true;
 }
 
 function buildSummary_(filteredRows, todayRows) {

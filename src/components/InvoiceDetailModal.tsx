@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Download, Printer, Share2, User, X } from "lucide-react";
+import { Download, Pencil, Printer, Share2, User, X } from "lucide-react";
 import { formatDateTime } from "../utils/date";
 import { createPdfBlob, savePdf } from "../utils/pdf";
 import { useInvoicePrint } from "../hooks/useInvoicePrint";
@@ -27,12 +27,14 @@ interface InvoiceDetailModalProps {
     invoiceId: string,
     paymentMethod: Invoice["paymentMethod"]
   ) => Promise<boolean>;
+  onEdit: (invoice: Invoice) => void;
 }
 
 export const InvoiceDetailModal = ({
   invoice,
   onClose,
   onMarkPaid,
+  onEdit,
 }: InvoiceDetailModalProps) => {
   if (!invoice) return null;
 
@@ -149,6 +151,7 @@ export const InvoiceDetailModal = ({
               onPrint={printInvoice}
               onDownload={handleDownloadPdf}
               onShare={shareInvoicePdf}
+              onEdit={() => onEdit(invoice)}
               onClose={onClose}
             />
           </div>
@@ -239,6 +242,7 @@ const InvoiceActions = ({
   onPrint,
   onDownload,
   onShare,
+  onEdit,
   onClose,
 }: {
   invoice: Invoice;
@@ -250,6 +254,7 @@ const InvoiceActions = ({
   onPrint: () => void;
   onDownload: () => void;
   onShare: () => void;
+  onEdit: () => void;
   onClose: () => void;
 }) => (
   <div
@@ -257,8 +262,27 @@ const InvoiceActions = ({
       isDownloading || isSharing ? "hidden" : ""
     }`}
   >
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <Button
+        variant="outline"
+        onClick={onEdit}
+        className="w-full sm:w-auto"
+        disabled={isSharing || isDownloading}
+      >
+        <Pencil className="w-4 h-4 mr-2" />
+        Edit Invoice
+      </Button>
+      <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
+        Close
+      </Button>
+    </div>
+
     {invoice.status === "pending" && (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(150px,1fr)_auto] sm:items-center">
+      <div className="mb-3 rounded-lg border border-yellow-100 bg-yellow-50 p-3">
+        <div className="mb-2 text-sm font-semibold text-yellow-800">
+          Payment pending
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(150px,1fr)_auto] sm:items-center">
         <Select
           value={paymentMethod}
           onValueChange={(value) =>
@@ -284,10 +308,11 @@ const InvoiceActions = ({
         >
           {isSharing ? "Sharing..." : "Mark Paid"}
         </Button>
+        </div>
       </div>
     )}
 
-    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <Button
         variant="outline"
         onClick={onShare}
@@ -313,9 +338,6 @@ const InvoiceActions = ({
       >
         <Download className="w-4 h-4 mr-2" />
         Download PDF
-      </Button>
-      <Button variant="outline" onClick={onClose} className="w-full">
-        Close
       </Button>
     </div>
   </div>

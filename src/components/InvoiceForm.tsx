@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Invoice, InvoiceItem } from "../types/invoice";
 import { generateInvoiceId, formatDate } from "../utils/invoiceGenerator";
-import { saveInvoice } from "../utils/googleSheets";
+import { saveInvoice, updateInvoice } from "../utils/googleSheets";
 import { createBlankInvoiceItem, PRODUCT_TYPE_OPTIONS } from "../utils/invoiceConstants";
 import {
   calculateInvoiceTotals,
@@ -24,14 +24,41 @@ import {
 interface InvoiceFormProps {
   onSave: (invoice: Invoice) => void;
   showToast: (message: string, type: "success" | "error") => void;
+  editingInvoice?: Invoice | null;
+  onCancelEdit?: () => void;
 }
 
-export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
+export const InvoiceForm = ({
+  onSave,
+  showToast,
+  editingInvoice,
+  onCancelEdit,
+}: InvoiceFormProps) => {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [date, setDate] = useState(formatDate());
   const [items, setItems] = useState<InvoiceItem[]>([createBlankInvoiceItem("1")]);
   const [saving, setSaving] = useState(false);
+  const isEditing = Boolean(editingInvoice);
+
+  useEffect(() => {
+    if (!editingInvoice) {
+      setCustomerName("");
+      setPhoneNumber("");
+      setDate(formatDate());
+      setItems([createBlankInvoiceItem("1")]);
+      return;
+    }
+
+    setCustomerName(String(editingInvoice.customerName || ""));
+    setPhoneNumber(String(editingInvoice.phoneNumber || ""));
+    setDate(String(editingInvoice.date || formatDate()));
+    setItems(
+      editingInvoice.items.length > 0
+        ? editingInvoice.items
+        : [createBlankInvoiceItem("1")]
+    );
+  }, [editingInvoice]);
 
   const addItem = () => {
     setItems([...items, createBlankInvoiceItem()]);
@@ -66,29 +93,37 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
     const { subtotal, taxTotal, total } = calculateInvoiceTotals(validItems);
 
     const invoice: Invoice = {
-      id: generateInvoiceId(),
+      id: editingInvoice?.id || generateInvoiceId(),
       customerName: customerName.trim(),
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: String(phoneNumber).trim(),
       date,
-      createdAt: new Date().toLocaleString("sv-SE").replace(" ", "T"),
+      createdAt:
+        editingInvoice?.createdAt || new Date().toLocaleString("sv-SE").replace(" ", "T"),
       type: getInvoiceType(validItems),
       items: validItems,
       subtotal,
       taxTotal,
       total,
-      status: "pending",
+      status: editingInvoice?.status || "pending",
+      paymentMethod: editingInvoice?.paymentMethod,
     };
 
     try {
-      const result = await saveInvoice(invoice);
+      const result = isEditing ? await updateInvoice(invoice) : await saveInvoice(invoice);
       if (result.success) {
-        showToast("Invoice saved successfully!", "success");
+        showToast(
+          isEditing ? "Invoice updated successfully!" : "Invoice saved successfully!",
+          "success"
+        );
         onSave(invoice);
         setCustomerName("");
         setPhoneNumber("");
         setItems([createBlankInvoiceItem("1")]);
       } else {
-        showToast(result.error || "Failed to save invoice", "error");
+        showToast(
+          result.error || (isEditing ? "Failed to update invoice" : "Failed to save invoice"),
+          "error"
+        );
       }
     } catch (error) {
       showToast("Network error. Please try again.", "error");
@@ -108,9 +143,13 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
             <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">Create Invoice</h2>
+              <h2 className="text-xl font-bold">
+                {isEditing ? "Edit Invoice" : "Create Invoice"}
+              </h2>
               <p className="text-sm text-gray-300">
-                Add customer details and billable items.
+                {isEditing
+                  ? `Correct details for ${editingInvoice?.id}.`
+                  : "Add customer details and billable items."}
               </p>
             </div>
           </div>
@@ -235,13 +274,17 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
             type="button"
             variant="outline"
             onClick={() => {
-              setCustomerName("");
-              setPhoneNumber("");
-              setItems([createBlankInvoiceItem("1")]);
+              if (isEditing) {
+                onCancelEdit?.();
+              } else {
+                setCustomerName("");
+                setPhoneNumber("");
+                setItems([createBlankInvoiceItem("1")]);
+              }
             }}
             className="sm:w-32"
           >
-            Clear
+            {isEditing ? "Cancel" : "Clear"}
           </Button>
           <Button onClick={handleSave} disabled={saving} className="sm:w-48">
             {saving ? (
@@ -252,7 +295,7 @@ export const InvoiceForm = ({ onSave, showToast }: InvoiceFormProps) => {
             ) : (
               <span className="flex items-center gap-2">
                 <Save className="w-4 h-4" />
-                Save Invoice
+                {isEditing ? "Update Invoice" : "Save Invoice"}
               </span>
             )}
           </Button>

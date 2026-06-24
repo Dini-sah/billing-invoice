@@ -31,6 +31,7 @@ function App() {
     getThemeById(localStorage.getItem(THEME_STORAGE_KEY))
   );
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -86,8 +87,15 @@ function App() {
   };
 
   const handleInvoiceSaved = (invoice: Invoice) => {
+    setEditingInvoice(null);
     refresh(); // Refresh the list when a new invoice is saved
     setActiveTab("list"); // Switch to list view to show the new invoice
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(null);
+    setEditingInvoice(invoice);
+    setActiveTab("create");
   };
 
   return (
@@ -129,7 +137,10 @@ function App() {
               </div>
               <div className="grid w-full grid-cols-3 rounded-lg border border-gray-200 bg-gray-100/80 p-1 sm:w-auto sm:min-w-[25rem]">
                 <Button
-                  onClick={() => setActiveTab("create")}
+                  onClick={() => {
+                    setEditingInvoice(null);
+                    setActiveTab("create");
+                  }}
                   variant={activeTab === "create" ? "default" : "ghost"}
                   className="h-10 gap-2 shadow-none"
                 >
@@ -161,7 +172,15 @@ function App() {
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         {activeTab === "create" ? (
-          <InvoiceForm onSave={handleInvoiceSaved} showToast={showToast} />
+          <InvoiceForm
+            onSave={handleInvoiceSaved}
+            showToast={showToast}
+            editingInvoice={editingInvoice}
+            onCancelEdit={() => {
+              setEditingInvoice(null);
+              setActiveTab("list");
+            }}
+          />
         ) : activeTab === "list" ? (
           <InvoiceList
             invoices={invoices}
@@ -178,7 +197,10 @@ function App() {
             filters={filters}
             onFiltersChange={setFilters}
             summary={summary}
-            onCreateInvoice={() => setActiveTab("create")}
+            onCreateInvoice={() => {
+              setEditingInvoice(null);
+              setActiveTab("create");
+            }}
           />
         ) : (
           <Cashbook
@@ -199,6 +221,7 @@ function App() {
         invoice={selectedInvoice}
         onClose={() => setSelectedInvoice(null)}
         onMarkPaid={handleMarkPaid}
+        onEdit={handleEditInvoice}
       />
 
       {/* Toast Notification */}

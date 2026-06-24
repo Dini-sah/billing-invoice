@@ -1,6 +1,6 @@
 // Google Sheets API integration using native fetch
 // Replace YOUR_SCRIPT_ID_HERE with your actual Google Apps Script web app URL
-import { InvoiceFilters, InvoiceSummary } from '../types/invoice';
+import { Invoice, InvoiceFilters, InvoiceSummary } from '../types/invoice';
 import { CashbookEntry } from '../types/cashbook';
 
 const GOOGLE_SCRIPT_URL = 'https://invoice-proxy.harielectronics.workers.dev/';
@@ -60,6 +60,34 @@ export const saveInvoiceToGoogleSheets = async (invoiceData: any): Promise<Googl
 };
 
 export const saveInvoice = saveInvoiceToGoogleSheets;
+
+export const updateInvoice = async (
+  invoice: Invoice
+): Promise<GoogleSheetsResponse> => {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'updateInvoice',
+        data: invoice
+      })
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to update invoice' };
+    }
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating invoice:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
 
 export const updateInvoiceStatus = async (
   invoiceId: string,

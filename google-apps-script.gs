@@ -153,6 +153,42 @@ function doPost(e) {
       return jsonResponse_({ success: false, error: 'Invoice not found: ' + invoiceId });
     }
 
+    if (payload.action === 'updateInvoice') {
+      var updatedInvoice = payload.data || {};
+      var updatedInvoiceId = updatedInvoice.id || '';
+
+      if (!updatedInvoiceId) {
+        return jsonResponse_({ success: false, error: 'Missing invoice id' });
+      }
+
+      var updateSheet = getSheet_();
+      var updateRowNumber = findRowByValue_(updateSheet, COL.invoiceId, updatedInvoiceId);
+      if (!updateRowNumber) {
+        return jsonResponse_({ success: false, error: 'Invoice not found: ' + updatedInvoiceId });
+      }
+
+      updateSheet.getRange(updateRowNumber, 1, 1, COL.paymentMethod).setValues([[
+        updatedInvoice.id || '',
+        updatedInvoice.customerName || '',
+        updatedInvoice.phoneNumber || '',
+        updatedInvoice.date || '',
+        updatedInvoice.type || '',
+        JSON.stringify(updatedInvoice.items || []),
+        Number(updatedInvoice.subtotal || 0),
+        Number(updatedInvoice.taxTotal || 0),
+        Number(updatedInvoice.total || 0),
+        updatedInvoice.status || 'pending',
+        updatedInvoice.createdAt || new Date(),
+        updatedInvoice.paymentMethod || ''
+      ]]);
+
+      return jsonResponse_({
+        success: true,
+        invoiceId: updatedInvoiceId,
+        updatedRow: updateRowNumber
+      });
+    }
+
     if (payload.action === 'saveCashbookEntry') {
       var entry = payload.data || {};
       if (!entry.id || !entry.type || !entry.date || !entry.title || !entry.amount) {
@@ -245,18 +281,18 @@ function doGet(e) {
         }
 
         return {
-          id: row[COL.invoiceId - 1],
-          customerName: row[COL.customer - 1],
-          phoneNumber: row[COL.phone - 1],
-          date: row[COL.date - 1],
+          id: String(row[COL.invoiceId - 1] || ''),
+          customerName: String(row[COL.customer - 1] || ''),
+          phoneNumber: String(row[COL.phone - 1] || ''),
+          date: normalizeDateCell_(row[COL.date - 1]),
           createdAt: createdAt,
-          type: row[COL.type - 1],
+          type: String(row[COL.type - 1] || ''),
           items: JSON.parse(row[COL.items - 1] || '[]'),
           subtotal: Number(row[COL.subtotal - 1] || 0),
           taxTotal: Number(row[COL.tax - 1] || 0),
           total: Number(row[COL.total - 1] || 0),
-          status: row[COL.status - 1] || '',
-          paymentMethod: row[COL.paymentMethod - 1] || ''
+          status: String(row[COL.status - 1] || ''),
+          paymentMethod: String(row[COL.paymentMethod - 1] || '')
         };
       });
 

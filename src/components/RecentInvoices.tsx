@@ -43,25 +43,35 @@ const InvoiceRow = ({ invoice, onViewInvoice }: InvoiceRowProps) => {
   const due = invoice.status === "pending" ? invoice.total : 0;
 
   return (
-    <div className="grid gap-4 bg-white px-5 py-4 transition hover:bg-slate-50 lg:grid-cols-[48px_1fr_1.2fr_.8fr_.8fr_.8fr_.8fr_.8fr_.8fr_.8fr] lg:items-center">
+    <div className="bg-white px-4 py-4 transition hover:bg-slate-50 sm:px-5 sm:py-4 lg:grid lg:grid-cols-[48px_1fr_1.2fr_.8fr_.8fr_.8fr_.8fr_.8fr_.8fr_.8fr] lg:items-center">
+
+      {/* Desktop checkbox */}
       <span className="hidden h-4 w-4 rounded border border-slate-300 bg-white lg:block" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-slate-950">
-          {invoice.id}
-        </p>
-        <p className="mt-1 text-xs capitalize text-slate-500 lg:hidden">
-          {invoice.type}
-        </p>
+
+      {/* ── Row 1: Invoice ID + Status badge (mobile only) ── */}
+      <div className="flex items-center justify-between gap-2 lg:col-start-2">
+        <p className="truncate text-sm font-bold text-slate-950">{invoice.id}</p>
+        <span
+          className={`shrink-0 inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize lg:hidden ${
+            invoice.status === "paid"
+              ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+              : "border-amber-100 bg-amber-50 text-amber-700"
+          }`}
+        >
+          {invoice.status}
+        </span>
       </div>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-800">
-          {invoice.customerName}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">{invoice.phoneNumber}</p>
+
+      {/* ── Row 2: Customer name + phone ── */}
+      <div className="mt-2 min-w-0 lg:col-start-3 lg:mt-0">
+        <p className="truncate text-sm font-semibold text-slate-800">{invoice.customerName}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{invoice.phoneNumber}</p>
       </div>
-      <p className="text-sm text-slate-600">{getRelativeDate(invoice.date)}</p>
-      <p className="text-sm text-slate-600">{getRelativeDate(invoice.date)}</p>
-      <div>
+
+      {/* Desktop-only columns */}
+      <p className="hidden text-sm text-slate-600 lg:block">{getRelativeDate(invoice.date)}</p>
+      <p className="hidden text-sm text-slate-600 lg:block">{getRelativeDate(invoice.date)}</p>
+      <div className="hidden lg:block">
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold capitalize ${
             invoice.status === "paid"
@@ -72,19 +82,45 @@ const InvoiceRow = ({ invoice, onViewInvoice }: InvoiceRowProps) => {
           {invoice.status}
         </span>
       </div>
-      <p className="text-sm font-bold text-slate-950">
-        {formatCurrency(invoice.total)}
-      </p>
-      <p className="text-sm font-semibold text-emerald-700">
-        {formatCurrency(paid)}
-      </p>
-      <p className="hidden text-sm font-semibold text-rose-700 lg:block">
-        {formatCurrency(due)}
-      </p>
-      <div className="flex items-center justify-between gap-3 lg:justify-end">
-        <p className="text-sm font-semibold text-rose-700 lg:hidden">
-          {formatCurrency(due)}
-        </p>
+
+      {/* Desktop amounts */}
+      <p className="hidden text-sm font-bold text-slate-950 lg:block">{formatCurrency(invoice.total)}</p>
+      <p className="hidden text-sm font-semibold text-emerald-700 lg:block">{formatCurrency(paid)}</p>
+      <p className="hidden text-sm font-semibold text-rose-700 lg:block">{formatCurrency(due)}</p>
+
+      {/* ── Mobile: compact info bar ── */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 sm:p-3 lg:hidden">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="text-center">
+            <p className="text-[9px] font-semibold uppercase text-slate-400 sm:text-[10px]">Total</p>
+            <p className="text-xs font-bold text-slate-950 sm:text-sm">{formatCurrency(invoice.total)}</p>
+          </div>
+          <div className="h-6 w-px bg-slate-200 sm:h-8" />
+          <div className="text-center">
+            <p className="text-[9px] font-semibold uppercase text-slate-400 sm:text-[10px]">{invoice.status === "paid" ? "Paid" : "Due"}</p>
+            <p className={`text-xs font-bold sm:text-sm ${invoice.status === "paid" ? "text-emerald-600" : "text-rose-600"}`}>
+              {invoice.status === "paid" ? formatCurrency(paid) : formatCurrency(due)}
+            </p>
+          </div>
+          <div className="h-6 w-px bg-slate-200 sm:h-8" />
+          <div className="text-center">
+            <p className="text-[9px] font-semibold uppercase text-slate-400 sm:text-[10px]">Date</p>
+            <p className="text-[10px] font-semibold text-slate-600 sm:text-xs">{getRelativeDate(invoice.date)}</p>
+          </div>
+        </div>
+        <Button
+          onClick={() => onViewInvoice(invoice)}
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1 px-2.5 text-[11px] font-semibold sm:h-9 sm:gap-1.5 sm:px-3 sm:text-xs"
+        >
+          <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="hidden sm:inline">View</span>
+        </Button>
+      </div>
+
+      {/* ── Desktop: action button ── */}
+      <div className="hidden items-center justify-end lg:flex">
         <Button
           onClick={() => onViewInvoice(invoice)}
           variant="outline"

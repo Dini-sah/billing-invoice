@@ -253,6 +253,7 @@ function App() {
   const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(null);
     setEditingInvoice(invoice);
+    setShowInvoiceForm(true);
     setActiveTab("create");
   };
 

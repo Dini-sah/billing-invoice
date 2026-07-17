@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CustomerRecord, DefaultItem, Invoice, InvoiceItem } from "../types/invoice";
 import { generateInvoiceId, formatDate } from "../utils/invoiceGenerator";
 import { saveInvoice, updateInvoice } from "../utils/googleSheets";
@@ -13,12 +13,15 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { InvoiceItemRow } from "./InvoiceItemRow";
 import {
+  ArrowLeft,
   CalendarDays,
   FileText,
+  IndianRupee,
   Plus,
   ReceiptText,
   Save,
   UserRound,
+  Phone,
 } from "lucide-react";
 import {
   Select,
@@ -51,6 +54,7 @@ export const InvoiceForm = ({
   const [items, setItems] = useState<InvoiceItem[]>([createBlankInvoiceItem("1")]);
   const [saving, setSaving] = useState(false);
   const isEditing = Boolean(editingInvoice);
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!editingInvoice) {
@@ -70,6 +74,12 @@ export const InvoiceForm = ({
         : [createBlankInvoiceItem("1")]
     );
   }, [editingInvoice]);
+
+  useEffect(() => {
+    if (isEditing && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isEditing]);
 
   const addItem = () => {
     setItems([...items, createBlankInvoiceItem()]);
@@ -151,196 +161,285 @@ export const InvoiceForm = ({
   };
 
   const { subtotal, taxTotal, total } = calculateInvoiceTotals(items);
+  const dueDate = (() => {
+    const invoiceDate = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(invoiceDate.getTime())) return "";
+    invoiceDate.setMonth(invoiceDate.getMonth() + 1);
+    return formatDate(invoiceDate);
+  })();
+
+  const resetForm = () => {
+    if (isEditing) {
+      onCancelEdit?.();
+      return;
+    }
+
+    setCustomerName("");
+    setPhoneNumber("");
+    setDate(formatDate());
+    setItems([createBlankInvoiceItem("1")]);
+  };
 
   return (
-    <div className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm shadow-gray-950/[0.03]">
-      <div className="border-b border-gray-200 bg-[var(--theme-header)] px-4 py-5 text-white sm:px-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white ring-1 ring-white/15">
-            <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">
-                {isEditing ? "Edit Invoice" : "Create Invoice"}
-              </h2>
-              <p className="text-sm text-gray-300">
-                {isEditing
-                  ? `Correct details for ${editingInvoice?.id}.`
-                  : "Add customer details and billable items."}
-              </p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/10 px-4 py-2">
-            <p className="text-xs font-semibold uppercase text-gray-300">Current total</p>
-            <p className="text-lg font-bold">{formatCurrency(total)}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-6">
-        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
-              <UserRound className="h-4 w-4" />
-            </span>
-            <h3 className="font-semibold text-gray-950">Customer Details</h3>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <Label>Existing Customer</Label>
-              <Select value="" onValueChange={selectCustomer}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select saved customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.length === 0 ? (
-                    <SelectItem value="no-customers" disabled>
-                      No customers saved
-                    </SelectItem>
-                  ) : (
-                    customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.phoneNumber}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="customerName">Customer Name</Label>
-              <Input
-                id="customerName"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="John Doe"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                value={phoneNumber}
-                placeholder="9876543210"
-                maxLength={10}
-                className="mt-1"
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "");
-                  if (value.length <= 10) {
-                    setPhoneNumber(value);
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
-              <CalendarDays className="h-4 w-4" />
-            </span>
-            <h3 className="font-semibold text-gray-950">Invoice Date</h3>
-          </div>
-          <div className="max-w-sm">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        </section>
-
-        <section className="mb-6 rounded-lg border border-gray-200 bg-gray-50/70 p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--theme-soft)] text-[var(--theme-primary)] shadow-sm">
-                <ReceiptText className="h-4 w-4" />
-              </span>
-              <h3 className="font-semibold text-gray-950">Items & Services</h3>
-            </div>
-            <Button
-              type="button"
-              onClick={addItem}
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Item
-            </Button>
-          </div>
-
-          <div className="space-y-3">
-            {items.map((item, index) => (
-              <InvoiceItemRow
-                key={item.id}
-                item={item}
-                index={index}
-                productTypeOptions={PRODUCT_TYPE_OPTIONS}
-                defaultItems={defaultItems}
-                onChange={(updatedItem) => updateItem(item.id, updatedItem)}
-                onRemove={() => removeItem(item.id)}
-                canRemove={items.length > 1}
-              />
-            ))}
-          </div>
-        </section>
-
-        <div className="ml-auto max-w-md rounded-lg border border-gray-200 bg-white p-4 shadow-sm shadow-gray-950/[0.03]">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Subtotal</span>
-              <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Tax (3.5%)</span>
-              <span className="font-medium text-gray-900">{formatCurrency(taxTotal)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-950">
-              <span>Total</span>
-              <span className="text-[var(--theme-primary)]">{formatCurrency(total)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-end">
+    <div ref={formRef} className="mx-auto w-full max-w-[1500px] px-3 py-4 sm:px-5 lg:px-8">
+      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
           <Button
             type="button"
             variant="outline"
-            onClick={() => {
-              if (isEditing) {
-                onCancelEdit?.();
-              } else {
-                setCustomerName("");
-                setPhoneNumber("");
-                setItems([createBlankInvoiceItem("1")]);
-              }
-            }}
-            className="sm:w-32"
+            size="sm"
+            onClick={resetForm}
+            aria-label={isEditing ? "Cancel editing invoice" : "Clear invoice form"}
+            className="mt-1 h-10 w-10 rounded-xl p-0"
           >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--theme-primary)]">
+              <FileText className="h-3.5 w-3.5" />
+              Sales invoice
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-950 sm:text-3xl">
+              {isEditing ? "Edit invoice" : "Create new invoice"}
+            </h2>
+            <p className="text-sm text-slate-500">
+              {isEditing
+                ? `Correct customer details, services and totals for ${editingInvoice?.id}.`
+                : "Add customer details, services and payment terms."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 sm:justify-end">
+          <Button type="button" variant="outline" onClick={resetForm}>
             {isEditing ? "Cancel" : "Clear"}
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="sm:w-48">
+          <Button onClick={handleSave} disabled={saving} className="min-w-36">
             {saving ? (
               <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 Saving...
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <Save className="w-4 h-4" />
-                {isEditing ? "Update Invoice" : "Save Invoice"}
+                <Save className="h-4 w-4" />
+                {isEditing ? "Update" : "Save draft"}
               </span>
             )}
           </Button>
         </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04]">
+            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <UserRound className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-bold text-gray-950">Bill to</h3>
+                <p className="text-sm text-slate-500">
+                  Choose an existing customer or enter a new one.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-2">
+              <div>
+                <Label>Existing customer</Label>
+                <Select value="" onValueChange={selectCustomer}>
+                  <SelectTrigger className="mt-1 h-11 rounded-xl">
+                    <SelectValue placeholder="New / walk-in customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.length === 0 ? (
+                      <SelectItem value="no-customers" disabled>
+                        No customers saved
+                      </SelectItem>
+                    ) : (
+                      customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.phoneNumber}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="customerName">Customer name *</Label>
+                <div className="relative mt-1">
+                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    id="customerName"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Full name or business"
+                    className="rounded-xl pl-9"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="phoneNumber">Phone number *</Label>
+                <div className="relative mt-1">
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    value={phoneNumber}
+                    placeholder="Customer phone"
+                    maxLength={10}
+                    className="rounded-xl pl-9"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 10) {
+                        setPhoneNumber(value);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04]">
+            <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                  <ReceiptText className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-gray-950">Items & services</h3>
+                  <p className="text-sm text-slate-500">
+                    Add products, repair services or custom charges.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={addItem}
+                variant="outline"
+                size="sm"
+                className="rounded-xl border-orange-200 text-orange-600 hover:border-orange-300 hover:bg-orange-50"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add line
+              </Button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              {items.map((item, index) => (
+                <InvoiceItemRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  productTypeOptions={PRODUCT_TYPE_OPTIONS}
+                  defaultItems={defaultItems}
+                  onChange={(updatedItem) => updateItem(item.id, updatedItem)}
+                  onRemove={() => removeItem(item.id)}
+                  canRemove={items.length > 1}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04]">
+            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <FileText className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-bold text-gray-950">Notes & terms</h3>
+                <p className="text-sm text-slate-500">
+                  Payment due one calendar month after billing.
+                </p>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                Saved invoice data remains customer, date, items, tax and total.
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-5 xl:sticky xl:top-[7.5rem] xl:self-start">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04]">
+            <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <CalendarDays className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-bold text-gray-950">Invoice details</h3>
+                <p className="text-sm text-slate-500">Due date is fixed automatically.</p>
+              </div>
+            </div>
+            <div className="space-y-4 p-5">
+              <div>
+                <Label htmlFor="date">Invoice date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="mt-1 rounded-xl"
+                />
+              </div>
+              <div>
+                <Label htmlFor="dueDate">Due date</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={dueDate}
+                  disabled
+                  className="mt-1 rounded-xl bg-slate-50"
+                />
+                <p className="mt-2 text-xs text-slate-400">
+                  One calendar month after billing.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04]">
+            <div className="bg-slate-950 px-5 py-6 text-white">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                <IndianRupee className="h-4 w-4 text-orange-500" />
+                Invoice summary
+              </div>
+              <div className="text-4xl font-extrabold tracking-tight">
+                {formatCurrency(total)}
+              </div>
+              <p className="mt-1 text-sm text-slate-400">Final amount due</p>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="flex justify-between text-sm text-slate-600">
+                <span>Subtotal</span>
+                <span className="font-bold text-slate-900">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-slate-600">
+                <span>Tax</span>
+                <span className="font-bold text-slate-900">{formatCurrency(taxTotal)}</span>
+              </div>
+              <div className="flex justify-between border-t border-dashed border-slate-200 pt-4 text-base font-extrabold text-slate-950">
+                <span>Total</span>
+                <span>{formatCurrency(total)}</span>
+              </div>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="h-12 w-full rounded-xl"
+              >
+                {saving ? "Saving..." : (
+                  <span className="flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    {isEditing ? "Update invoice" : "Save invoice draft"}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

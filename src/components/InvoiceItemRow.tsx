@@ -1,5 +1,5 @@
 import { DefaultItem, InvoiceItem } from "../types/invoice";
-import { Minus, Plus, Trash2, Sparkles } from "lucide-react";
+import { IndianRupee, Minus, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { formatCurrency, getLineSubtotal, getLineTax } from "../utils/invoiceMath";
@@ -61,51 +61,35 @@ export const InvoiceItemRow = ({
   return (
     <div
       className={cn(
-        "group relative rounded-xl border bg-white p-4 shadow-sm shadow-slate-900/[0.04] transition-all sm:p-5",
-        "border-slate-200 hover:border-slate-300 hover:shadow-md hover:shadow-slate-900/[0.06]",
-        item.taxable && "ring-1 ring-emerald-200/70"
+        "group relative rounded-2xl border bg-slate-50/70 p-4 transition-all sm:p-5",
+        "border-slate-200 hover:border-slate-300 hover:bg-white hover:shadow-sm hover:shadow-slate-900/[0.04]",
+        item.taxable && "ring-1 ring-orange-200/80"
       )}
     >
-      {/* Item header */}
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={cn(
-              "flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-xs font-bold",
-              item.category === "service"
-                ? "bg-violet-100 text-violet-700"
-                : "bg-sky-100 text-sky-700"
-            )}
-          >
-            #{index + 1}
-          </span>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-              item.category === "service"
-                ? "bg-violet-50 text-violet-700"
-                : "bg-sky-50 text-sky-700"
-            )}
-          >
-            {item.category}
-          </span>
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Line {index + 1}
+          </div>
+          <div className="mt-1 text-xs font-medium text-slate-400">
+            {item.category === "service" ? "Repair service" : "Product sale"}
+          </div>
         </div>
         {canRemove && (
           <button
             type="button"
             onClick={onRemove}
             aria-label="Remove item"
-            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Row 1: Category, Product type, Quick fill, Description */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-        <div className="md:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="md:col-span-2">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Category
           </label>
           <Select
@@ -128,7 +112,7 @@ export const InvoiceItemRow = ({
         </div>
 
         <div className="md:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Product type
           </label>
           <Select
@@ -149,7 +133,7 @@ export const InvoiceItemRow = ({
         </div>
 
         <div className="md:col-span-3">
-          <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-slate-900">
             <Sparkles className="h-3 w-3" />
             Quick fill
           </label>
@@ -173,8 +157,8 @@ export const InvoiceItemRow = ({
           </Select>
         </div>
 
-        <div className="md:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="md:col-span-4">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Description
           </label>
           <Input
@@ -186,10 +170,9 @@ export const InvoiceItemRow = ({
         </div>
       </div>
 
-      {/* Row 2: Quantity, Unit price, Tax toggle, Line total */}
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-end">
         <div className="sm:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Quantity
           </label>
           <div className="flex items-center gap-1.5">
@@ -228,13 +211,11 @@ export const InvoiceItemRow = ({
         </div>
 
         <div className="sm:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Unit price
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
+            Rate
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
-              ₹
-            </span>
+            <IndianRupee className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               type="number"
               step="0.01"
@@ -244,20 +225,20 @@ export const InvoiceItemRow = ({
               onChange={(e) =>
                 updateItem({ price: parseFloat(e.target.value) || 0 })
               }
-              className="h-11 pl-7 font-semibold"
+              className="h-11 pl-9 font-semibold"
             />
           </div>
         </div>
 
         <div className="sm:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Tax
           </label>
           <label
             className={cn(
               "flex h-11 cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 text-sm transition",
               item.taxable
-                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                ? "border-orange-300 bg-orange-50 text-orange-700"
                 : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
             )}
           >
@@ -265,7 +246,7 @@ export const InvoiceItemRow = ({
             <span
               className={cn(
                 "relative inline-flex h-5 w-9 items-center rounded-full transition",
-                item.taxable ? "bg-emerald-500" : "bg-slate-300"
+                item.taxable ? "bg-orange-500" : "bg-slate-300"
               )}
             >
               <span
@@ -285,19 +266,19 @@ export const InvoiceItemRow = ({
         </div>
 
         <div className="sm:col-span-3">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-900">
             Line total
           </label>
           <div
             className={cn(
               "flex h-11 items-center justify-between rounded-lg border px-3",
               hasPrice && hasDescription
-                ? "border-slate-900 bg-slate-900 text-white"
+                ? "border-slate-950 bg-slate-950 text-white"
                 : "border-slate-200 bg-slate-50 text-slate-400"
             )}
           >
             <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
-              {item.quantity} × {formatCurrency(item.price)}
+              {item.quantity} x {formatCurrency(item.price)}
             </span>
             <span className="text-base font-bold">
               {formatCurrency(itemTotal)}
@@ -306,10 +287,9 @@ export const InvoiceItemRow = ({
         </div>
       </div>
 
-      {/* Tax breakdown */}
       {item.taxable && hasPrice && (
-        <div className="mt-3 flex items-center justify-end gap-2 text-xs font-medium text-emerald-700">
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5">
+        <div className="mt-3 flex items-center justify-end gap-2 text-xs font-medium text-orange-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5">
             + Tax {formatCurrency(taxAmount)}
           </span>
         </div>

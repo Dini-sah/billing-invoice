@@ -49,3 +49,28 @@ export interface GoogleSheetsResponse {
   data?: any;
   error?: string;
 }
+
+export interface CustomerRecord {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  lastInvoiceDate?: string;
+  invoiceCount: number;
+  totalSpend: number;
+}
+
+export interface DefaultItem {
+  id: string;
+  category: InvoiceItem['category'];
+  productType: string;
+  description: string;
+  price: number;
+  taxable: boolean;
+}
+
+export interface AppSettings {
+  businessName: string;
+  businessSubtitle: string;
+  ownerName: string;
+  defaultTaxable: boolean;
+}

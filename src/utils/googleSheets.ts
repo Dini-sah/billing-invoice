@@ -1,6 +1,12 @@
 // Google Sheets API integration using native fetch
 // Replace YOUR_SCRIPT_ID_HERE with your actual Google Apps Script web app URL
-import { Invoice, InvoiceFilters, InvoiceSummary } from '../types/invoice';
+import {
+  CustomerRecord,
+  DefaultItem,
+  Invoice,
+  InvoiceFilters,
+  InvoiceSummary,
+} from '../types/invoice';
 import { CashbookEntry } from '../types/cashbook';
 
 const GOOGLE_SCRIPT_URL = 'https://invoice-proxy.harielectronics.workers.dev/';
@@ -264,6 +270,103 @@ export const deleteCashbookEntry = async (
     return { success: true, data };
   } catch (error) {
     console.error('Error deleting cashbook entry:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+export const fetchCustomers = async (): Promise<GoogleSheetsResponse> => {
+  try {
+    const params = new URLSearchParams({ action: 'getCustomers' });
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to fetch customers' };
+    }
+
+    return { success: true, data: data.data || [] };
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+export const saveCustomerToGoogleSheets = async (
+  customer: CustomerRecord
+): Promise<GoogleSheetsResponse> => postMasterData('saveCustomer', customer, 'customer');
+
+export const deleteCustomerFromGoogleSheets = async (
+  id: string
+): Promise<GoogleSheetsResponse> => postMasterData('deleteCustomer', { id }, 'customer');
+
+export const fetchDefaultItems = async (): Promise<GoogleSheetsResponse> => {
+  try {
+    const params = new URLSearchParams({ action: 'getDefaultItems' });
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.success) {
+      return { success: false, error: data?.error || 'Failed to fetch default items' };
+    }
+
+    return { success: true, data: data.data || [] };
+  } catch (error) {
+    console.error('Error fetching default items:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+export const saveDefaultItemToGoogleSheets = async (
+  item: DefaultItem
+): Promise<GoogleSheetsResponse> => postMasterData('saveDefaultItem', item, 'default item');
+
+export const deleteDefaultItemFromGoogleSheets = async (
+  id: string
+): Promise<GoogleSheetsResponse> => postMasterData('deleteDefaultItem', { id }, 'default item');
+
+const postMasterData = async (
+  action: string,
+  data: unknown,
+  label: string
+): Promise<GoogleSheetsResponse> => {
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, data })
+    });
+    const responseData = await response.json().catch(() => null);
+
+    if (!response.ok || !responseData?.success) {
+      return { success: false, error: responseData?.error || `Failed to save ${label}` };
+    }
+
+    return { success: true, data: responseData.data };
+  } catch (error) {
+    console.error(`Error saving ${label}:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'

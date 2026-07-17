@@ -12,7 +12,7 @@ import {
 } from "../utils/googleSheets";
 import { storage } from "../utils/storage";
 
-export const useCashbook = (invoiceTodayTotal: number) => {
+export const useCashbook = (invoiceDateTotal: number, selectedDate?: string) => {
   const [entries, setEntries] = useState<CashbookEntry[]>(
     () => storage.get(CASHBOOK_STORAGE_KEY) || []
   );
@@ -91,8 +91,8 @@ export const useCashbook = (invoiceTodayTotal: number) => {
   };
 
   const summary = useMemo(
-    () => calculateCashbookSummary(entries, invoiceTodayTotal),
-    [entries, invoiceTodayTotal]
+    () => calculateCashbookSummary(entries, invoiceDateTotal, selectedDate),
+    [entries, invoiceDateTotal, selectedDate]
   );
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Invoice, InvoiceItem } from "../types/invoice";
+import { CustomerRecord, DefaultItem, Invoice, InvoiceItem } from "../types/invoice";
 import { generateInvoiceId, formatDate } from "../utils/invoiceGenerator";
 import { saveInvoice, updateInvoice } from "../utils/googleSheets";
 import { createBlankInvoiceItem, PRODUCT_TYPE_OPTIONS } from "../utils/invoiceConstants";
@@ -20,12 +20,21 @@ import {
   Save,
   UserRound,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface InvoiceFormProps {
   onSave: (invoice: Invoice) => void;
   showToast: (message: string, type: "success" | "error") => void;
   editingInvoice?: Invoice | null;
   onCancelEdit?: () => void;
+  customers: CustomerRecord[];
+  defaultItems: DefaultItem[];
 }
 
 export const InvoiceForm = ({
@@ -33,6 +42,8 @@ export const InvoiceForm = ({
   showToast,
   editingInvoice,
   onCancelEdit,
+  customers,
+  defaultItems,
 }: InvoiceFormProps) => {
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -62,6 +73,13 @@ export const InvoiceForm = ({
 
   const addItem = () => {
     setItems([...items, createBlankInvoiceItem()]);
+  };
+
+  const selectCustomer = (customerId: string) => {
+    const customer = customers.find((entry) => entry.id === customerId);
+    if (!customer) return;
+    setCustomerName(customer.name);
+    setPhoneNumber(customer.phoneNumber);
   };
 
   const removeItem = (id: string) => {
@@ -169,6 +187,27 @@ export const InvoiceForm = ({
             <h3 className="font-semibold text-gray-950">Customer Details</h3>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label>Existing Customer</Label>
+              <Select value="" onValueChange={selectCustomer}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select saved customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.length === 0 ? (
+                    <SelectItem value="no-customers" disabled>
+                      No customers saved
+                    </SelectItem>
+                  ) : (
+                    customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.phoneNumber}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label htmlFor="customerName">Customer Name</Label>
               <Input
@@ -244,6 +283,7 @@ export const InvoiceForm = ({
                 key={item.id}
                 item={item}
                 productTypeOptions={PRODUCT_TYPE_OPTIONS}
+                defaultItems={defaultItems}
                 onChange={(updatedItem) => updateItem(item.id, updatedItem)}
                 onRemove={() => removeItem(item.id)}
                 canRemove={items.length > 1}

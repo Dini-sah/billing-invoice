@@ -45,7 +45,7 @@ const createPdfSourceElement = (sourceElement: HTMLElement) => {
 
 const pdfOptions = (filename: string) => ({
   filename,
-  margin: [8, 8, 8, 8],
+  margin: [8, 8, 8, 8] as [number, number, number, number],
   html2canvas: {
     scale: 2,
     useCORS: true,
@@ -54,8 +54,8 @@ const pdfOptions = (filename: string) => ({
     scrollX: 0,
     scrollY: 0,
   },
-  jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+  pagebreak: { mode: ["avoid-all", "css", "legacy"] as const },
 });
 
 export const createPdfBlob = async (
@@ -84,4 +84,3 @@ export const savePdf = async (sourceElement: HTMLElement, filename: string) => {
     source.cleanup();
   }
 };
-

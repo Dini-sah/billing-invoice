@@ -6,6 +6,8 @@
 const SHEET_ID = '1uIGqqdHJ3eZabPCFYfwwZIVaGnq1NHlI2B8LbciWtxY';
 const SHEET_NAME = 'Invoices';
 const CASHBOOK_SHEET_NAME = 'Cashbook';
+const CUSTOMERS_SHEET_NAME = 'Customers';
+const DEFAULT_ITEMS_SHEET_NAME = 'DefaultItems';
 
 const COL = {
   invoiceId: 1,
@@ -34,6 +36,26 @@ const CASHBOOK_COL = {
   createdAt: 9
 };
 
+const CUSTOMER_COL = {
+  id: 1,
+  name: 2,
+  phoneNumber: 3,
+  lastInvoiceDate: 4,
+  invoiceCount: 5,
+  totalSpend: 6,
+  updatedAt: 7
+};
+
+const DEFAULT_ITEM_COL = {
+  id: 1,
+  category: 2,
+  productType: 3,
+  description: 4,
+  price: 5,
+  taxable: 6,
+  updatedAt: 7
+};
+
 function getSheet_() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -54,6 +76,26 @@ function getCashbookSheet_() {
   return sheet;
 }
 
+function getCustomersSheet_() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(CUSTOMERS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CUSTOMERS_SHEET_NAME);
+  }
+  ensureCustomersHeaders_(sheet);
+  return sheet;
+}
+
+function getDefaultItemsSheet_() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName(DEFAULT_ITEMS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(DEFAULT_ITEMS_SHEET_NAME);
+  }
+  ensureDefaultItemsHeaders_(sheet);
+  return sheet;
+}
+
 function ensureCashbookHeaders_(sheet) {
   var headers = [
     'ID',
@@ -66,6 +108,42 @@ function ensureCashbookHeaders_(sheet) {
     'Note',
     'CreatedAt'
   ];
+  var existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  var needsHeaders = existing.every(function(value) {
+    return !String(value || '').trim();
+  });
+  if (needsHeaders) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+}
+
+function ensureCustomersHeaders_(sheet) {
+  var headers = [
+    'ID',
+    'Name',
+    'Phone Number',
+    'Last Invoice Date',
+    'Invoice Count',
+    'Total Spend',
+    'UpdatedAt'
+  ];
+  ensureHeaders_(sheet, headers);
+}
+
+function ensureDefaultItemsHeaders_(sheet) {
+  var headers = [
+    'ID',
+    'Category',
+    'Product Type',
+    'Description',
+    'Price',
+    'Taxable',
+    'UpdatedAt'
+  ];
+  ensureHeaders_(sheet, headers);
+}
+
+function ensureHeaders_(sheet, headers) {
   var existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
   var needsHeaders = existing.every(function(value) {
     return !String(value || '').trim();
@@ -238,6 +316,90 @@ function doPost(e) {
       return jsonResponse_({ success: false, error: 'Cashbook entry not found: ' + entryId });
     }
 
+    if (payload.action === 'saveCustomer') {
+      var customer = payload.data || {};
+      if (!customer.id || !customer.name || !customer.phoneNumber) {
+        return jsonResponse_({ success: false, error: 'Missing required customer fields' });
+      }
+
+      var customersSheet = getCustomersSheet_();
+      var customerRowNumber = findRowByValue_(customersSheet, CUSTOMER_COL.id, customer.id);
+      var customerValues = [[
+        customer.id || '',
+        customer.name || '',
+        customer.phoneNumber || '',
+        customer.lastInvoiceDate || '',
+        Number(customer.invoiceCount || 0),
+        Number(customer.totalSpend || 0),
+        new Date()
+      ]];
+
+      if (customerRowNumber) {
+        customersSheet.getRange(customerRowNumber, 1, 1, CUSTOMER_COL.updatedAt).setValues(customerValues);
+      } else {
+        customersSheet.appendRow(customerValues[0]);
+      }
+
+      return jsonResponse_({ success: true, data: customer });
+    }
+
+    if (payload.action === 'deleteCustomer') {
+      var deleteCustomerId = (payload.data || {}).id || '';
+      if (!deleteCustomerId) {
+        return jsonResponse_({ success: false, error: 'Missing customer id' });
+      }
+
+      var deleteCustomersSheet = getCustomersSheet_();
+      var deleteCustomerRowNumber = findRowByValue_(deleteCustomersSheet, CUSTOMER_COL.id, deleteCustomerId);
+      if (deleteCustomerRowNumber) {
+        deleteCustomersSheet.deleteRow(deleteCustomerRowNumber);
+      }
+
+      return jsonResponse_({ success: true, id: deleteCustomerId });
+    }
+
+    if (payload.action === 'saveDefaultItem') {
+      var defaultItem = payload.data || {};
+      if (!defaultItem.id || !defaultItem.description) {
+        return jsonResponse_({ success: false, error: 'Missing required item fields' });
+      }
+
+      var defaultItemsSheet = getDefaultItemsSheet_();
+      var defaultItemRowNumber = findRowByValue_(defaultItemsSheet, DEFAULT_ITEM_COL.id, defaultItem.id);
+      var defaultItemValues = [[
+        defaultItem.id || '',
+        defaultItem.category || 'sale',
+        defaultItem.productType || '',
+        defaultItem.description || '',
+        Number(defaultItem.price || 0),
+        Boolean(defaultItem.taxable),
+        new Date()
+      ]];
+
+      if (defaultItemRowNumber) {
+        defaultItemsSheet.getRange(defaultItemRowNumber, 1, 1, DEFAULT_ITEM_COL.updatedAt).setValues(defaultItemValues);
+      } else {
+        defaultItemsSheet.appendRow(defaultItemValues[0]);
+      }
+
+      return jsonResponse_({ success: true, data: defaultItem });
+    }
+
+    if (payload.action === 'deleteDefaultItem') {
+      var deleteDefaultItemId = (payload.data || {}).id || '';
+      if (!deleteDefaultItemId) {
+        return jsonResponse_({ success: false, error: 'Missing item id' });
+      }
+
+      var deleteDefaultItemsSheet = getDefaultItemsSheet_();
+      var deleteDefaultItemRowNumber = findRowByValue_(deleteDefaultItemsSheet, DEFAULT_ITEM_COL.id, deleteDefaultItemId);
+      if (deleteDefaultItemRowNumber) {
+        deleteDefaultItemsSheet.deleteRow(deleteDefaultItemRowNumber);
+      }
+
+      return jsonResponse_({ success: true, id: deleteDefaultItemId });
+    }
+
     return jsonResponse_({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResponse_({ success: false, error: String(err && err.stack ? err.stack : err) });
@@ -355,6 +517,53 @@ function doGet(e) {
       }).reverse();
 
       return jsonResponse_({ success: true, data: cashbookRows });
+    }
+
+    if (action === 'getCustomers') {
+      var customersSheet = getCustomersSheet_();
+      var customerValues = customersSheet.getDataRange().getValues();
+      if (customerValues.length <= 1) {
+        return jsonResponse_({ success: true, data: [] });
+      }
+
+      var customerRows = customerValues.slice(1).map(function(row) {
+        return {
+          id: String(row[CUSTOMER_COL.id - 1] || ''),
+          name: String(row[CUSTOMER_COL.name - 1] || ''),
+          phoneNumber: String(row[CUSTOMER_COL.phoneNumber - 1] || ''),
+          lastInvoiceDate: normalizeDateCell_(row[CUSTOMER_COL.lastInvoiceDate - 1]),
+          invoiceCount: Number(row[CUSTOMER_COL.invoiceCount - 1] || 0),
+          totalSpend: Number(row[CUSTOMER_COL.totalSpend - 1] || 0)
+        };
+      }).filter(function(customer) {
+        return customer.id && customer.name && customer.phoneNumber;
+      }).reverse();
+
+      return jsonResponse_({ success: true, data: customerRows });
+    }
+
+    if (action === 'getDefaultItems') {
+      var defaultItemsSheet = getDefaultItemsSheet_();
+      var defaultItemValues = defaultItemsSheet.getDataRange().getValues();
+      if (defaultItemValues.length <= 1) {
+        return jsonResponse_({ success: true, data: [] });
+      }
+
+      var defaultItemRows = defaultItemValues.slice(1).map(function(row) {
+        return {
+          id: String(row[DEFAULT_ITEM_COL.id - 1] || ''),
+          category: String(row[DEFAULT_ITEM_COL.category - 1] || 'sale'),
+          productType: String(row[DEFAULT_ITEM_COL.productType - 1] || ''),
+          description: String(row[DEFAULT_ITEM_COL.description - 1] || ''),
+          price: Number(row[DEFAULT_ITEM_COL.price - 1] || 0),
+          taxable: row[DEFAULT_ITEM_COL.taxable - 1] === true ||
+            String(row[DEFAULT_ITEM_COL.taxable - 1] || '').toLowerCase() === 'true'
+        };
+      }).filter(function(item) {
+        return item.id && item.description;
+      }).reverse();
+
+      return jsonResponse_({ success: true, data: defaultItemRows });
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

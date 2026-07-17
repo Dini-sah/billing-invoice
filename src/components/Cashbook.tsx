@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -31,6 +31,7 @@ import {
 interface CashbookProps {
   entries: CashbookEntry[];
   summary: CashbookSummary;
+  selectedDate: string;
   loading: boolean;
   syncing: boolean;
   error: string | null;
@@ -42,6 +43,7 @@ interface CashbookProps {
 export const Cashbook = ({
   entries,
   summary,
+  selectedDate,
   loading,
   syncing,
   error,
@@ -50,7 +52,7 @@ export const Cashbook = ({
   onRemoveEntry,
 }: CashbookProps) => {
   const [type, setType] = useState<CashbookEntryType>("debit");
-  const [date, setDate] = useState(getTodayDateInputValue());
+  const [date, setDate] = useState(selectedDate || getTodayDateInputValue());
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(debitCategories[0]);
   const [amount, setAmount] = useState("");
@@ -59,10 +61,14 @@ export const Cashbook = ({
   const [note, setNote] = useState("");
 
   const categories = type === "credit" ? creditCategories : debitCategories;
-  const todayEntries = useMemo(
-    () => entries.filter((entry) => entry.date === getTodayDateInputValue()),
-    [entries]
+  const selectedEntries = useMemo(
+    () => entries.filter((entry) => entry.date === selectedDate),
+    [entries, selectedDate]
   );
+
+  useEffect(() => {
+    setDate(selectedDate);
+  }, [selectedDate]);
 
   const handleTypeChange = (nextType: CashbookEntryType) => {
     setType(nextType);
@@ -98,21 +104,21 @@ export const Cashbook = ({
       <section className="grid gap-3 md:grid-cols-3">
         <CashMetric
           icon={ArrowDownLeft}
-          label="Today In"
+          label="Selected In"
           value={formatCurrency(summary.todayIn)}
           helper={`${formatCurrency(summary.invoiceIn)} invoice + ${formatCurrency(summary.manualIn)} manual`}
           tone="text-emerald-700 bg-emerald-50"
         />
         <CashMetric
           icon={ArrowUpRight}
-          label="Today Out"
+          label="Selected Out"
           value={formatCurrency(summary.todayOut)}
           helper="Manual debit entries"
           tone="text-rose-700 bg-rose-50"
         />
         <CashMetric
           icon={IndianRupee}
-          label="Net Today"
+          label="Net Selected"
           value={formatCurrency(summary.todayNet)}
           helper={summary.todayNet >= 0 ? "Positive balance" : "More out than in"}
           tone="text-[var(--theme-primary)] bg-[var(--theme-soft)]"
@@ -259,7 +265,7 @@ export const Cashbook = ({
         <div className="rounded-lg border border-gray-200/80 bg-white p-4 shadow-sm shadow-gray-950/[0.03]">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-gray-950">Today Ledger</h2>
+              <h2 className="text-lg font-bold text-gray-950">Selected Date Ledger</h2>
               <p className="text-sm text-gray-500">
                 Invoice income is included automatically. Manual entries sync to Sheets.
               </p>
@@ -268,7 +274,7 @@ export const Cashbook = ({
               <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
                 {loading
                   ? "Loading..."
-                  : `${todayEntries.length + (summary.invoiceIn > 0 ? 1 : 0)} entries`}
+                  : `${selectedEntries.length + (summary.invoiceIn > 0 ? 1 : 0)} entries`}
               </span>
               <Button
                 type="button"
@@ -287,10 +293,10 @@ export const Cashbook = ({
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
               Loading cashbook entries...
             </div>
-          ) : todayEntries.length === 0 && summary.invoiceIn <= 0 ? (
+          ) : selectedEntries.length === 0 && summary.invoiceIn <= 0 ? (
             <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
               <WalletCards className="mx-auto mb-3 h-8 w-8 text-gray-400" />
-              <p className="font-semibold text-gray-950">No manual cashbook entries today</p>
+              <p className="font-semibold text-gray-950">No cashbook entries for this date</p>
               <p className="mt-1 text-sm text-gray-500">
                 Add expenses or extra income to see the daily net balance.
               </p>
@@ -309,7 +315,7 @@ export const Cashbook = ({
                       </p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      Pulled from today's paid invoice total in the Invoices sheet
+                      Pulled from paid invoice total for the selected date
                     </p>
                   </div>
                   <p className="text-lg font-bold text-emerald-700">
@@ -317,7 +323,7 @@ export const Cashbook = ({
                   </p>
                 </div>
               )}
-              {todayEntries.map((entry) => (
+              {selectedEntries.map((entry) => (
                 <div
                   key={entry.id}
                   className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50/70 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center"

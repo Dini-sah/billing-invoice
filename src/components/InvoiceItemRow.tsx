@@ -1,4 +1,4 @@
-import { InvoiceItem } from "../types/invoice";
+import { DefaultItem, InvoiceItem } from "../types/invoice";
 import { Minus, Plus, X } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -14,6 +14,7 @@ import {
 interface InvoiceItemRowProps {
   item: InvoiceItem;
   productTypeOptions: Record<"sale" | "service", string[]>;
+  defaultItems: DefaultItem[];
   onChange: (item: InvoiceItem) => void;
   onRemove: () => void;
   canRemove: boolean;
@@ -22,12 +23,31 @@ interface InvoiceItemRowProps {
 export const InvoiceItemRow = ({
   item,
   productTypeOptions,
+  defaultItems,
   onChange,
   onRemove,
   canRemove,
 }: InvoiceItemRowProps) => {
   const updateItem = (updates: Partial<InvoiceItem>) => {
     onChange({ ...item, ...updates });
+  };
+
+  const matchingDefaults = defaultItems.filter(
+    (defaultItem) => defaultItem.category === item.category
+  );
+
+  const applyDefaultItem = (defaultItemId: string) => {
+    const defaultItem = defaultItems.find((entry) => entry.id === defaultItemId);
+    if (!defaultItem) return;
+
+    onChange({
+      ...item,
+      category: defaultItem.category,
+      productType: defaultItem.productType,
+      description: defaultItem.description,
+      price: defaultItem.price,
+      taxable: defaultItem.taxable,
+    });
   };
 
   const itemTotal = getLineSubtotal(item);
@@ -37,7 +57,7 @@ export const InvoiceItemRow = ({
     <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm shadow-gray-950/[0.02] sm:p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
         <div className="flex-1 space-y-3">
-          <div className="grid grid-cols-1 gap-2 lg:grid-cols-[150px_190px_1fr]">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-[150px_190px_240px_1fr]">
             <Select
               value={item.category}
               onValueChange={(value) =>
@@ -68,6 +88,24 @@ export const InvoiceItemRow = ({
                     {option}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value="" onValueChange={applyDefaultItem}>
+              <SelectTrigger>
+                <SelectValue placeholder="Default item" />
+              </SelectTrigger>
+              <SelectContent>
+                {matchingDefaults.length === 0 ? (
+                  <SelectItem value="no-defaults" disabled>
+                    No defaults saved
+                  </SelectItem>
+                ) : (
+                  matchingDefaults.map((defaultItem) => (
+                    <SelectItem key={defaultItem.id} value={defaultItem.id}>
+                      {defaultItem.description}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <Input

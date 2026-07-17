@@ -18,6 +18,7 @@ import { AppSettings, CustomerRecord, DefaultItem, Invoice } from "./types/invoi
 import { useInvoices } from "./hooks/useInvoices";
 import { InvoiceForm } from "./components/InvoiceForm";
 import { InvoiceList } from "./components/InvoiceList";
+import { RecentInvoices } from "./components/RecentInvoices";
 import { Cashbook } from "./components/Cashbook";
 import { InvoiceDetailModal } from "./components/InvoiceDetailModal";
 import { Toast } from "./components/Toast";
@@ -87,6 +88,7 @@ function App() {
   const [settings, setSettings] = useState<AppSettings>(() => getSettings());
   const [selectedDate, setSelectedDate] = useState(() => getTodayDateInputValue());
   const [dateChanging, setDateChanging] = useState(false);
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
 
   const {
     invoices,
@@ -103,14 +105,8 @@ function App() {
     setFilters,
     summary,
   } = useInvoices();
-  const selectedPaidInvoiceTotal =
-    summary.cashTotal +
-    summary.gpayTotal +
-    summary.cardTotal +
-    summary.bankTransferTotal +
-    summary.otherPaymentTotal;
-  const cashbook = useCashbook(selectedPaidInvoiceTotal, selectedDate);
-  
+  const cashbook = useCashbook(selectedDate);
+
   const customers = useMemo(
     () => mergeCustomersWithInvoices(storedCustomers, invoices),
     [storedCustomers, invoices]
@@ -160,8 +156,24 @@ function App() {
     invoiceId: string,
     paymentMethod: Invoice["paymentMethod"]
   ): Promise<boolean> => {
+    // Find the invoice to get details for cashbook entry
+    const invoice = invoices.find((inv) => inv.id === invoiceId);
+
     const result = await updateInvoiceStatus(invoiceId, "paid", paymentMethod);
     if (result.success) {
+      // Create cashbook entry for this invoice
+      if (invoice) {
+        await cashbook.addEntry({
+          type: "credit",
+          date: invoice.date,
+          title: invoice.customerName,
+          category: "Invoice payment",
+          amount: invoice.total,
+          paymentMethod: paymentMethod || "cash",
+          note: `Invoice #${invoice.id}`,
+        });
+      }
+
       setSelectedInvoice((current) =>
         current && current.id === invoiceId
           ? { ...current, status: "paid", paymentMethod }
@@ -251,7 +263,13 @@ function App() {
 
   const startCreate = () => {
     setEditingInvoice(null);
+    setShowInvoiceForm(true);
     setActiveTab("create");
+  };
+
+  const showRecentInvoices = () => {
+    setEditingInvoice(null);
+    setShowInvoiceForm(false);
   };
 
   const handleRefreshInvoices = () => {
@@ -299,7 +317,11 @@ function App() {
                 icon={FileText}
                 label="Invoices"
                 active={activeTab === "create"}
-                onClick={startCreate}
+                onClick={() => {
+                  setEditingInvoice(null);
+                  setShowInvoiceForm(false);
+                  setActiveTab("create");
+                }}
               />
               <NavItem
                 icon={BookOpenText}
@@ -421,14 +443,32 @@ function App() {
               </div>
             )}
             {activeTab === "create" ? (
-              <InvoiceForm
-                onSave={handleInvoiceSaved}
-                showToast={showToast}
-                editingInvoice={editingInvoice}
-                onCancelEdit={showList}
-                customers={customers}
-                defaultItems={defaultItems}
-              />
+              showInvoiceForm ? (
+                <InvoiceForm
+                  onSave={handleInvoiceSaved}
+                  showToast={showToast}
+                  editingInvoice={editingInvoice}
+                  onCancelEdit={showRecentInvoices}
+                  customers={customers}
+                  defaultItems={defaultItems}
+                />
+              ) : (
+                <RecentInvoices
+                  invoices={invoices}
+                  onRefresh={handleRefreshInvoices}
+                  onViewInvoice={setSelectedInvoice}
+                  onCreateInvoice={startCreate}
+                  page={page}
+                  pageSize={pageSize}
+                  total={total}
+                  onPageChange={setPage}
+                  search={search}
+                  onSearchChange={setSearch}
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  filterLabel="Recent Invoices"
+                />
+              )
             ) : activeTab === "list" ? (
               <InvoiceList
                 invoices={invoices}

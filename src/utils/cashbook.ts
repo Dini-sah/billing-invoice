@@ -5,6 +5,7 @@ import { getTodayDateInputValue } from "./date";
 export const CASHBOOK_STORAGE_KEY = "hari_cashbook_entries_v1";
 
 export const creditCategories = [
+  "Invoice payment",
   "Advance payment",
   "Old balance received",
   "Accessory sale",
@@ -45,32 +46,48 @@ export const createCashbookEntry = (
 
 export const calculateCashbookSummary = (
   entries: CashbookEntry[],
-  invoiceTodayTotal: number,
   today = getTodayDateInputValue()
 ): CashbookSummary => {
   const todayEntries = entries.filter((entry) => entry.date === today);
-  const todayManualIn = todayEntries
-    .filter((entry) => entry.type === "credit")
-    .reduce((sum, entry) => sum + entry.amount, 0);
+
+  // Separate invoice payments from manual entries
+  const todayInvoiceEntries = todayEntries.filter(
+    (entry) => entry.type === "credit" && entry.category === "Invoice payment"
+  );
+  const todayManualCreditEntries = todayEntries.filter(
+    (entry) => entry.type === "credit" && entry.category !== "Invoice payment"
+  );
+
+  const todayInvoiceIn = todayInvoiceEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const todayManualIn = todayManualCreditEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const todayOut = todayEntries
     .filter((entry) => entry.type === "debit")
     .reduce((sum, entry) => sum + entry.amount, 0);
-  const allTimeManualIn = entries
-    .filter((entry) => entry.type === "credit")
-    .reduce((sum, entry) => sum + entry.amount, 0);
+
+  // All-time calculations
+  const allTimeInvoiceEntries = entries.filter(
+    (entry) => entry.type === "credit" && entry.category === "Invoice payment"
+  );
+  const allTimeManualCreditEntries = entries.filter(
+    (entry) => entry.type === "credit" && entry.category !== "Invoice payment"
+  );
+  const allTimeInvoiceIn = allTimeInvoiceEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const allTimeManualIn = allTimeManualCreditEntries.reduce((sum, entry) => sum + entry.amount, 0);
   const allTimeOut = entries
     .filter((entry) => entry.type === "debit")
     .reduce((sum, entry) => sum + entry.amount, 0);
-  const todayIn = invoiceTodayTotal + todayManualIn;
+
+  const todayIn = todayInvoiceIn + todayManualIn;
+  const allTimeIn = allTimeInvoiceIn + allTimeManualIn;
 
   return {
     manualIn: todayManualIn,
-    invoiceIn: invoiceTodayTotal,
+    invoiceIn: todayInvoiceIn,
     todayIn,
     todayOut,
     todayNet: todayIn - todayOut,
-    allTimeIn: allTimeManualIn,
+    allTimeIn,
     allTimeOut,
-    allTimeNet: allTimeManualIn - allTimeOut,
+    allTimeNet: allTimeIn - allTimeOut,
   };
 };

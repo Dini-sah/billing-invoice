@@ -278,10 +278,11 @@ export const InvoiceForm = ({
           </div>
 
           <div className="space-y-3">
-            {items.map((item) => (
+            {items.map((item, index) => (
               <InvoiceItemRow
                 key={item.id}
                 item={item}
+                index={index}
                 productTypeOptions={PRODUCT_TYPE_OPTIONS}
                 defaultItems={defaultItems}
                 onChange={(updatedItem) => updateItem(item.id, updatedItem)}

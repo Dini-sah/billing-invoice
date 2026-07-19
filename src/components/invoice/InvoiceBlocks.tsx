@@ -73,23 +73,42 @@ const TableHead = ({
   </th>
 );
 
-export const InvoiceTotals = ({ invoice }: { invoice: Invoice }) => (
-  <div className="relative z-10 ml-auto max-w-md space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-    <div className="flex justify-between text-sm text-gray-600">
-      <span>Subtotal</span>
-      <span className="font-medium text-gray-900">
-        {formatCurrency(invoice.subtotal)}
-      </span>
+export const InvoiceTotals = ({ invoice }: { invoice: Invoice }) => {
+  const hasDiscount = (invoice.discountAmount || 0) > 0;
+  return (
+    <div className="relative z-10 ml-auto max-w-md space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>Subtotal</span>
+        <span className="font-medium text-gray-900">
+          {formatCurrency(invoice.subtotal)}
+        </span>
+      </div>
+      <div className="flex justify-between text-sm text-emerald-600">
+        <span>
+          Discount{invoice.discountType === "percentage" && (invoice.discountValue || 0) > 0
+            ? ` (${invoice.discountValue}%)`
+            : ""}
+        </span>
+        <span className="font-medium">
+          {hasDiscount ? "− " : ""}{formatCurrency(invoice.discountAmount || 0)}
+        </span>
+      </div>
+      {hasDiscount && (
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>Taxable base</span>
+          <span className="font-medium">{formatCurrency(invoice.taxableBase || invoice.subtotal)}</span>
+        </div>
+      )}
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>Tax (3.5%)</span>
+        <span className="font-medium text-gray-900">
+          {formatCurrency(invoice.taxTotal)}
+        </span>
+      </div>
+      <div className="flex justify-between border-t border-gray-200 pt-3 text-xl font-bold text-gray-950">
+        <span>Total Amount</span>
+        <span className="text-emerald-700">{formatCurrency(invoice.total)}</span>
+      </div>
     </div>
-    <div className="flex justify-between text-sm text-gray-600">
-      <span>Tax (3.5%)</span>
-      <span className="font-medium text-gray-900">
-        {formatCurrency(invoice.taxTotal)}
-      </span>
-    </div>
-    <div className="flex justify-between border-t border-gray-200 pt-3 text-xl font-bold text-gray-950">
-      <span>Total Amount</span>
-      <span className="text-emerald-700">{formatCurrency(invoice.total)}</span>
-    </div>
-  </div>
-);
+  );
+};

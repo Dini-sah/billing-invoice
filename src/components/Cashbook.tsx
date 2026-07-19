@@ -323,7 +323,12 @@ export const Cashbook = ({
                   </p>
                 </div>
               )}
-              {selectedEntries.map((entry) => (
+              {selectedEntries.map((entry) => {
+                const hasInvoiceBreakdown =
+                  entry.category === "Invoice payment" &&
+                  (entry.subtotal != null || entry.discountAmount != null);
+                const hasDiscount = (entry.discountAmount || 0) > 0;
+                return (
                 <div
                   key={entry.id}
                   className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50/70 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center"
@@ -340,11 +345,51 @@ export const Cashbook = ({
                         {entry.type === "credit" ? "In" : "Out"}
                       </span>
                       <p className="truncate font-semibold text-gray-950">{entry.title}</p>
+                      {hasDiscount && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                          −{formatCurrency(entry.discountAmount || 0)}
+                          {entry.discountType === "percentage"
+                            ? ` (${entry.discountValue}%)`
+                            : ""}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 text-sm capitalize text-gray-500">
                       {entry.category} · {entry.paymentMethod}
                       {entry.note ? ` · ${entry.note}` : ""}
                     </p>
+                    {hasInvoiceBreakdown && (
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 rounded-md border border-gray-200 bg-white/70 px-3 py-2 text-xs text-gray-600">
+                        {entry.subtotal != null && (
+                          <span>
+                            <span className="text-gray-400">Subtotal:</span>{" "}
+                            <span className="font-semibold text-gray-700">{formatCurrency(entry.subtotal)}</span>
+                          </span>
+                        )}
+                        {hasDiscount && (
+                          <span>
+                            <span className="text-gray-400">Discount:</span>{" "}
+                            <span className="font-semibold text-emerald-600">−{formatCurrency(entry.discountAmount || 0)}</span>
+                          </span>
+                        )}
+                        {entry.taxableBase != null && (
+                          <span>
+                            <span className="text-gray-400">Taxable:</span>{" "}
+                            <span className="font-semibold text-gray-700">{formatCurrency(entry.taxableBase)}</span>
+                          </span>
+                        )}
+                        {entry.taxTotal != null && (
+                          <span>
+                            <span className="text-gray-400">Tax (3.5%):</span>{" "}
+                            <span className="font-semibold text-gray-700">{formatCurrency(entry.taxTotal)}</span>
+                          </span>
+                        )}
+                        <span>
+                          <span className="text-gray-400">Total:</span>{" "}
+                          <span className="font-bold text-gray-900">{formatCurrency(entry.amount)}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <p
                     className={`text-lg font-bold ${
@@ -359,14 +404,15 @@ export const Cashbook = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => onRemoveEntry(entry.id)}
-                    disabled={syncing}
+                    disabled={syncing || hasInvoiceBreakdown}
                     className="justify-self-start text-red-500 hover:bg-red-50 hover:text-red-700 sm:justify-self-end"
                     aria-label={`Delete ${entry.title}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

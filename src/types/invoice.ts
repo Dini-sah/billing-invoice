@@ -8,6 +8,8 @@ export interface InvoiceItem {
   taxable: boolean;
 }
 
+export type DiscountType = 'percentage' | 'flat';
+
 export interface Invoice {
   id: string;
   customerName: string;
@@ -18,6 +20,10 @@ export interface Invoice {
   paymentMethod?: 'cash' | 'gpay' | 'card' | 'bank transfer' | 'other';
   items: InvoiceItem[];
   subtotal: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discountAmount: number;
+  taxableBase: number;
   taxTotal: number;
   total: number;
   status: 'pending' | 'paid';

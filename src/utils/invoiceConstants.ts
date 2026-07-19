@@ -1,6 +1,9 @@
-import { InvoiceItem } from "../types/invoice";
+import { DiscountType, InvoiceItem } from "../types/invoice";
 
 export const TAX_RATE = 0.035;
+
+export const DEFAULT_DISCOUNT_TYPE: DiscountType = "flat";
+export const DEFAULT_DISCOUNT_VALUE = 0;
 
 export const PRODUCT_TYPE_OPTIONS: Record<InvoiceItem["category"], string[]> = {
   sale: ["Phone cases", "Tempered glass", "Mobile phones", "Accessories", "Other"],

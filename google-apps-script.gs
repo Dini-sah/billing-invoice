@@ -1,7 +1,8 @@
 // Google Apps Script for Hari Electronics invoice backend.
 // Sheet columns:
 // A InvoiceID, B Customer, C Phone, D Date, E Type, F Items,
-// G Subtotal, H Tax, I Total, J Status, K CreatedAt, L Payment Method
+// G Subtotal, H Tax, I Total, J Status, K CreatedAt, L Payment Method,
+// M DiscountType, N DiscountValue, O DiscountAmount, P TaxableBase
 
 const SHEET_ID = '1uIGqqdHJ3eZabPCFYfwwZIVaGnq1NHlI2B8LbciWtxY';
 const SHEET_NAME = 'Invoices';
@@ -21,7 +22,11 @@ const COL = {
   total: 9,
   status: 10,
   createdAt: 11,
-  paymentMethod: 12
+  paymentMethod: 12,
+  discountType: 13,
+  discountValue: 14,
+  discountAmount: 15,
+  taxableBase: 16
 };
 
 const CASHBOOK_COL = {
@@ -198,7 +203,11 @@ function doPost(e) {
         invoice.total || 0,
         invoice.status || '',
         new Date(),
-        ''
+        '',
+        invoice.discountType || 'flat',
+        Number(invoice.discountValue || 0),
+        Number(invoice.discountAmount || 0),
+        Number(invoice.taxableBase || invoice.subtotal || 0)
       ]);
 
       return jsonResponse_({ success: true });
@@ -245,7 +254,7 @@ function doPost(e) {
         return jsonResponse_({ success: false, error: 'Invoice not found: ' + updatedInvoiceId });
       }
 
-      updateSheet.getRange(updateRowNumber, 1, 1, COL.paymentMethod).setValues([[
+      updateSheet.getRange(updateRowNumber, 1, 1, COL.taxableBase).setValues([[
         updatedInvoice.id || '',
         updatedInvoice.customerName || '',
         updatedInvoice.phoneNumber || '',
@@ -257,7 +266,11 @@ function doPost(e) {
         Number(updatedInvoice.total || 0),
         updatedInvoice.status || 'pending',
         updatedInvoice.createdAt || new Date(),
-        updatedInvoice.paymentMethod || ''
+        updatedInvoice.paymentMethod || '',
+        updatedInvoice.discountType || 'flat',
+        Number(updatedInvoice.discountValue || 0),
+        Number(updatedInvoice.discountAmount || 0),
+        Number(updatedInvoice.taxableBase || updatedInvoice.subtotal || 0)
       ]]);
 
       return jsonResponse_({
@@ -454,7 +467,11 @@ function doGet(e) {
           taxTotal: Number(row[COL.tax - 1] || 0),
           total: Number(row[COL.total - 1] || 0),
           status: String(row[COL.status - 1] || ''),
-          paymentMethod: String(row[COL.paymentMethod - 1] || '')
+          paymentMethod: String(row[COL.paymentMethod - 1] || ''),
+          discountType: String(row[COL.discountType - 1] || 'flat'),
+          discountValue: Number(row[COL.discountValue - 1] || 0),
+          discountAmount: Number(row[COL.discountAmount - 1] || 0),
+          taxableBase: Number(row[COL.taxableBase - 1] || row[COL.subtotal - 1] || 0)
         };
       });
 

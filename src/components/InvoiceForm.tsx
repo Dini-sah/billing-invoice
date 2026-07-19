@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { CustomerRecord, DefaultItem, Invoice, InvoiceItem } from "../types/invoice";
+import { CustomerRecord, DefaultItem, DiscountType, Invoice, InvoiceItem } from "../types/invoice";
 import { generateInvoiceId, formatDate } from "../utils/invoiceGenerator";
 import { saveInvoice, updateInvoice } from "../utils/googleSheets";
-import { createBlankInvoiceItem, PRODUCT_TYPE_OPTIONS } from "../utils/invoiceConstants";
+import { createBlankInvoiceItem, DEFAULT_DISCOUNT_TYPE, DEFAULT_DISCOUNT_VALUE, PRODUCT_TYPE_OPTIONS } from "../utils/invoiceConstants";
 import {
   calculateInvoiceTotals,
   formatCurrency,
@@ -52,6 +52,8 @@ export const InvoiceForm = ({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [date, setDate] = useState(formatDate());
   const [items, setItems] = useState<InvoiceItem[]>([createBlankInvoiceItem("1")]);
+  const [discountType, setDiscountType] = useState<DiscountType>(DEFAULT_DISCOUNT_TYPE);
+  const [discountValue, setDiscountValue] = useState<number>(DEFAULT_DISCOUNT_VALUE);
   const [saving, setSaving] = useState(false);
   const isEditing = Boolean(editingInvoice);
   const formRef = useRef<HTMLDivElement>(null);
@@ -62,6 +64,8 @@ export const InvoiceForm = ({
       setPhoneNumber("");
       setDate(formatDate());
       setItems([createBlankInvoiceItem("1")]);
+      setDiscountType(DEFAULT_DISCOUNT_TYPE);
+      setDiscountValue(DEFAULT_DISCOUNT_VALUE);
       return;
     }
 
@@ -72,6 +76,12 @@ export const InvoiceForm = ({
       editingInvoice.items.length > 0
         ? editingInvoice.items
         : [createBlankInvoiceItem("1")]
+    );
+    setDiscountType(editingInvoice.discountType || DEFAULT_DISCOUNT_TYPE);
+    setDiscountValue(
+      Number.isFinite(editingInvoice.discountValue)
+        ? editingInvoice.discountValue
+        : DEFAULT_DISCOUNT_VALUE
     );
   }, [editingInvoice]);
 
@@ -118,7 +128,13 @@ export const InvoiceForm = ({
 
     setSaving(true);
     const validItems = items.filter((item) => item.description.trim());
-    const { subtotal, taxTotal, total } = calculateInvoiceTotals(validItems);
+    const {
+      subtotal,
+      discountAmount,
+      taxableBase,
+      taxTotal,
+      total,
+    } = calculateInvoiceTotals(validItems, { discountType, discountValue });
 
     const invoice: Invoice = {
       id: editingInvoice?.id || generateInvoiceId(),
@@ -130,6 +146,10 @@ export const InvoiceForm = ({
       type: getInvoiceType(validItems),
       items: validItems,
       subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
+      taxableBase,
       taxTotal,
       total,
       status: editingInvoice?.status || "pending",
@@ -147,6 +167,8 @@ export const InvoiceForm = ({
         setCustomerName("");
         setPhoneNumber("");
         setItems([createBlankInvoiceItem("1")]);
+        setDiscountType(DEFAULT_DISCOUNT_TYPE);
+        setDiscountValue(DEFAULT_DISCOUNT_VALUE);
       } else {
         showToast(
           result.error || (isEditing ? "Failed to update invoice" : "Failed to save invoice"),
@@ -160,7 +182,14 @@ export const InvoiceForm = ({
     }
   };
 
-  const { subtotal, taxTotal, total } = calculateInvoiceTotals(items);
+  const {
+    subtotal,
+    discountAmount,
+    taxableBase,
+    taxTotal,
+    total,
+  } = calculateInvoiceTotals(items, { discountType, discountValue });
+  const hasDiscount = discountAmount > 0;
   const dueDate = (() => {
     const invoiceDate = new Date(`${date}T00:00:00`);
     if (Number.isNaN(invoiceDate.getTime())) return "";
@@ -178,6 +207,8 @@ export const InvoiceForm = ({
     setPhoneNumber("");
     setDate(formatDate());
     setItems([createBlankInvoiceItem("1")]);
+    setDiscountType(DEFAULT_DISCOUNT_TYPE);
+    setDiscountValue(DEFAULT_DISCOUNT_VALUE);
   };
 
   return (
@@ -413,12 +444,61 @@ export const InvoiceForm = ({
               <p className="mt-1 text-sm text-slate-400">Final amount due</p>
             </div>
             <div className="space-y-4 p-5">
+              <div>
+                <Label>Discount</Label>
+                <div className="mt-1 flex gap-2">
+                  <Select
+                    value={discountType}
+                    onValueChange={(value) => setDiscountType(value as DiscountType)}
+                  >
+                    <SelectTrigger className="h-11 w-28 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flat">₹ Amount</SelectItem>
+                      <SelectItem value="percentage">% Percent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={discountType === "percentage" ? "0.5" : "0.01"}
+                    value={discountValue === 0 ? "" : discountValue}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? 0 : Number(e.target.value);
+                      if (Number.isFinite(value) && value >= 0) {
+                        setDiscountValue(value);
+                      }
+                    }}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                {discountType === "percentage" && discountValue > 100 && (
+                  <p className="mt-1 text-xs text-red-500">Percent cannot exceed 100.</p>
+                )}
+              </div>
               <div className="flex justify-between text-sm text-slate-600">
                 <span>Subtotal</span>
                 <span className="font-bold text-slate-900">{formatCurrency(subtotal)}</span>
               </div>
+              {hasDiscount && (
+                <div className="flex justify-between text-sm text-emerald-600">
+                  <span>
+                    Discount
+                    {discountType === "percentage" ? ` (${discountValue}%)` : ""}
+                  </span>
+                  <span className="font-bold">− {formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+              {hasDiscount && (
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Taxable base</span>
+                  <span className="font-semibold">{formatCurrency(taxableBase)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-slate-600">
-                <span>Tax</span>
+                <span>Tax (3.5%)</span>
                 <span className="font-bold text-slate-900">{formatCurrency(taxTotal)}</span>
               </div>
               <div className="flex justify-between border-t border-dashed border-slate-200 pt-4 text-base font-extrabold text-slate-950">

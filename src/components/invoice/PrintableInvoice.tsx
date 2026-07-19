@@ -184,6 +184,22 @@ export const PrintableInvoice = ({
             <strong>{formatCurrency(invoice.subtotal)}</strong>
           </div>
           <div className="invoice-print-row">
+            <span>
+              Discount{invoice.discountType === "percentage" && (invoice.discountValue || 0) > 0
+                ? ` (${invoice.discountValue}%)`
+                : ""}
+            </span>
+            <strong>
+              {(invoice.discountAmount || 0) > 0 ? "− " : ""}{formatCurrency(invoice.discountAmount || 0)}
+            </strong>
+          </div>
+          {(invoice.discountAmount || 0) > 0 && (
+            <div className="invoice-print-row">
+              <span>Taxable base</span>
+              <strong>{formatCurrency(invoice.taxableBase || invoice.subtotal)}</strong>
+            </div>
+          )}
+          <div className="invoice-print-row">
             <span>Tax (3.5%)</span>
             <strong>{formatCurrency(invoice.taxTotal)}</strong>
           </div>

@@ -64,6 +64,16 @@ export const calculateCashbookSummary = (
     .filter((entry) => entry.type === "debit")
     .reduce((sum, entry) => sum + entry.amount, 0);
 
+  // Aggregated discount info from today's paid-invoice credit entries
+  const invoiceDiscountTotal = todayInvoiceEntries.reduce(
+    (sum, entry) => sum + (entry.discountAmount || 0),
+    0
+  );
+  const invoiceSubtotalTotal = todayInvoiceEntries.reduce(
+    (sum, entry) => sum + (entry.subtotal || entry.amount || 0),
+    0
+  );
+
   // All-time calculations
   const allTimeInvoiceEntries = entries.filter(
     (entry) => entry.type === "credit" && entry.category === "Invoice payment"

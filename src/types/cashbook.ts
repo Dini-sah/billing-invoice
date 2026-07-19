@@ -12,6 +12,14 @@ export interface CashbookEntry {
   paymentMethod: NonNullable<Invoice["paymentMethod"]>;
   note?: string;
   createdAt: string;
+  // Optional invoice breakdown (populated when entry is from a paid invoice)
+  invoiceId?: string;
+  subtotal?: number;
+  discountType?: Invoice["discountType"];
+  discountValue?: number;
+  discountAmount?: number;
+  taxableBase?: number;
+  taxTotal?: number;
 }
 
 export interface CashbookSummary {
@@ -23,4 +31,7 @@ export interface CashbookSummary {
   allTimeIn: number;
   allTimeOut: number;
   allTimeNet: number;
+  // Aggregated discount info from paid-invoice credit entries
+  invoiceDiscountTotal: number;
+  invoiceSubtotalTotal: number;
 }

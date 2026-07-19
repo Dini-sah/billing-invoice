@@ -145,6 +145,13 @@ function App() {
           amount: invoice.total,
           paymentMethod: paymentMethod || "cash",
           note: `Invoice #${invoice.id}`,
+          invoiceId: invoice.id,
+          subtotal: invoice.subtotal,
+          discountType: invoice.discountType,
+          discountValue: invoice.discountValue,
+          discountAmount: invoice.discountAmount,
+          taxableBase: invoice.taxableBase,
+          taxTotal: invoice.taxTotal,
         });
       }
 

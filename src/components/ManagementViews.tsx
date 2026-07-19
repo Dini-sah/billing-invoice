@@ -455,7 +455,7 @@ const generateExportCSV = (
   // Invoices section
   rows.push("=== INVOICES ===");
   rows.push(
-    "Invoice ID,Date,Customer Name,Phone,Type,Payment Method,Status,Subtotal,Tax,Total"
+    "Invoice ID,Date,Customer Name,Phone,Type,Payment Method,Status,Subtotal,Discount Type,Discount Value,Discount Amount,Taxable Base,Tax,Total"
   );
 
   invoices.forEach((invoice) => {
@@ -469,6 +469,10 @@ const generateExportCSV = (
         escapeCSV(invoice.paymentMethod || ""),
         escapeCSV(invoice.status),
         invoice.subtotal.toFixed(2),
+        escapeCSV(invoice.discountType || "flat"),
+        (invoice.discountValue || 0).toString(),
+        (invoice.discountAmount || 0).toFixed(2),
+        (invoice.taxableBase || 0).toFixed(2),
         invoice.taxTotal.toFixed(2),
         invoice.total.toFixed(2),
       ].join(",")

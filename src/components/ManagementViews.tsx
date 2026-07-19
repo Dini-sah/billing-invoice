@@ -3,6 +3,7 @@ import {
   BarChart3,
   Banknote,
   CreditCard,
+  Download,
   Landmark,
   Package,
   Plus,
@@ -11,8 +12,15 @@ import {
   Trash2,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
-import { AppSettings, CustomerRecord, DefaultItem, Invoice, InvoiceSummary } from "../types/invoice";
+import {
+  AppSettings,
+  CustomerRecord,
+  DefaultItem,
+  Invoice,
+  InvoiceSummary,
+} from "../types/invoice";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -252,13 +260,21 @@ export const ReportsView = ({
     }, {})
   ).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
+  const [showExportModal, setShowExportModal] = useState(false);
+
   return (
     <SectionShell icon={BarChart3} title="Reports" subtitle={`Business summary for ${selectedDate}.`}>
-      <div className="mb-5 grid gap-4 md:grid-cols-4">
-        <Metric label="Revenue" value={formatCurrency(revenue)} />
-        <Metric label="Paid" value={formatCurrency(paid)} />
-        <Metric label="Pending" value={formatCurrency(pending)} />
-        <Metric label="Average bill" value={formatCurrency(summary.filteredCount ? revenue / summary.filteredCount : 0)} />
+      <div className="mb-5 flex items-center justify-between">
+        <div className="grid gap-4 md:grid-cols-4">
+          <Metric label="Revenue" value={formatCurrency(revenue)} />
+          <Metric label="Paid" value={formatCurrency(paid)} />
+          <Metric label="Pending" value={formatCurrency(pending)} />
+          <Metric label="Average bill" value={formatCurrency(summary.filteredCount ? revenue / summary.filteredCount : 0)} />
+        </div>
+        <Button onClick={() => setShowExportModal(true)} className="gap-2 ml-4">
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
       </div>
       <DataTable headers={["Top item/service", "Quantity"]} emptyText="No item data available.">
         {topItems.map(([description, quantity]) => (
@@ -268,8 +284,250 @@ export const ReportsView = ({
           </tr>
         ))}
       </DataTable>
+
+      {showExportModal && (
+        <ExportModal
+          invoices={invoices}
+          summary={summary}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </SectionShell>
   );
+};
+
+// Export Modal Component
+interface ExportModalProps {
+  invoices: Invoice[];
+  summary: InvoiceSummary;
+  onClose: () => void;
+}
+
+const ExportModal = ({ invoices, summary, onClose }: ExportModalProps) => {
+  const today = new Date().toISOString().split("T")[0];
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState(today);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const filteredInvoices = filterInvoicesByDateRange(invoices, startDate, endDate);
+      const csv = generateExportCSV(filteredInvoices, summary, startDate, endDate);
+      downloadCSV(csv, startDate, endDate);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-3 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+              <Download className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-950">Export Data</h3>
+              <p className="text-xs text-slate-500">Select date range to export</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-4 px-6 py-5">
+          <p className="text-sm text-slate-600">
+            Export all invoices, customers, items, and summary data within the selected date range.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="export-start-date">Start Date</Label>
+              <Input
+                id="export-start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="export-end-date">End Date</Label>
+              <Input
+                id="export-end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
+            <p className="font-semibold text-slate-700">Export includes:</p>
+            <ul className="mt-1 space-y-0.5">
+              <li>• Invoice details (ID, date, customer, items, total, status)</li>
+              <li>• Payment summary (cash, GPay, card, bank transfer, other)</li>
+              <li>• All line items with quantity and price</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleExport} disabled={isExporting} className="gap-2">
+            {isExporting ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                Export CSV
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Filter invoices by date range
+const filterInvoicesByDateRange = (
+  invoices: Invoice[],
+  startDate: string,
+  endDate: string
+): Invoice[] => {
+  if (!startDate && !endDate) return invoices;
+
+  return invoices.filter((invoice) => {
+    const invoiceDate = getInvoiceDateKey(invoice);
+    if (!invoiceDate) return false;
+
+    if (startDate && endDate) {
+      return invoiceDate >= startDate && invoiceDate <= endDate;
+    }
+    if (startDate) return invoiceDate >= startDate;
+    if (endDate) return invoiceDate <= endDate;
+    return true;
+  });
+};
+
+// Generate CSV content
+const generateExportCSV = (
+  invoices: Invoice[],
+  summary: InvoiceSummary,
+  startDate: string,
+  endDate: string
+): string => {
+  const rows: string[] = [];
+
+  // Header section
+  rows.push("HARI ELECTRONICS - EXPORT REPORT");
+  rows.push(`Export Date,${new Date().toISOString().split("T")[0]}`);
+  rows.push(`Date Range,${startDate || "All"} to ${endDate || "All"}`);
+  rows.push("");
+
+  // Summary section
+  rows.push("=== SUMMARY ===");
+  rows.push(`Total Invoices,${invoices.length}`);
+  rows.push(`Total Revenue,${summary.filteredTotal.toFixed(2)}`);
+  rows.push(`Cash Total,${summary.cashTotal.toFixed(2)}`);
+  rows.push(`GPay Total,${summary.gpayTotal.toFixed(2)}`);
+  rows.push(`Card Total,${summary.cardTotal.toFixed(2)}`);
+  rows.push(`Bank Transfer Total,${summary.bankTransferTotal.toFixed(2)}`);
+  rows.push(`Other Total,${summary.otherPaymentTotal.toFixed(2)}`);
+  rows.push("");
+
+  // Invoices section
+  rows.push("=== INVOICES ===");
+  rows.push(
+    "Invoice ID,Date,Customer Name,Phone,Type,Payment Method,Status,Subtotal,Tax,Total"
+  );
+
+  invoices.forEach((invoice) => {
+    rows.push(
+      [
+        escapeCSV(invoice.id),
+        escapeCSV(invoice.date),
+        escapeCSV(invoice.customerName),
+        escapeCSV(invoice.phoneNumber),
+        escapeCSV(invoice.type),
+        escapeCSV(invoice.paymentMethod || ""),
+        escapeCSV(invoice.status),
+        invoice.subtotal.toFixed(2),
+        invoice.taxTotal.toFixed(2),
+        invoice.total.toFixed(2),
+      ].join(",")
+    );
+  });
+
+  rows.push("");
+
+  // Invoice Items section
+  rows.push("=== INVOICE ITEMS ===");
+  rows.push(
+    "Invoice ID,Item Description,Category,Product Type,Quantity,Price,Taxable"
+  );
+
+  invoices.forEach((invoice) => {
+    invoice.items.forEach((item) => {
+      rows.push(
+        [
+          escapeCSV(invoice.id),
+          escapeCSV(item.description),
+          escapeCSV(item.category),
+          escapeCSV(item.productType),
+          item.quantity.toString(),
+          item.price.toFixed(2),
+          item.taxable ? "Yes" : "No",
+        ].join(",")
+      );
+    });
+  });
+
+  rows.push("");
+  rows.push("=== END OF REPORT ===");
+
+  return rows.join("\n");
+};
+
+// Escape CSV special characters
+const escapeCSV = (value: string): string => {
+  if (!value) return "";
+  const str = String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
+// Download CSV file
+const downloadCSV = (csv: string, startDate: string, endDate: string) => {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const datePrefix = startDate || "all";
+  const dateSuffix = endDate || "all";
+  link.href = url;
+  link.download = `hari-electronics-export-${datePrefix}-to-${dateSuffix}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 export const SettingsView = ({

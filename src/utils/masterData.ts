@@ -237,33 +237,10 @@ export const mergeCustomersWithInvoices = (
 
 export const mergeItemsWithInvoices = (
   storedItems: DefaultItem[],
-  invoices: Invoice[]
+  _invoices: Invoice[]
 ): DefaultItem[] => {
-  const byKey = new Map<string, DefaultItem>();
-
-  storedItems.forEach((item) => {
-    byKey.set(getItemKey(item), item);
-  });
-
-  invoices.flatMap((invoice) => invoice.items).forEach((item) => {
-    if (!item.description.trim()) return;
-    const productType =
-      item.productType || PRODUCT_TYPE_OPTIONS[item.category][0] || "Other";
-    const nextItem: DefaultItem = {
-      id: createId("item"),
-      category: item.category,
-      productType,
-      description: item.description,
-      price: item.price,
-      taxable: item.taxable,
-    };
-    byKey.set(getItemKey(nextItem), {
-      ...nextItem,
-      id: byKey.get(getItemKey(nextItem))?.id || nextItem.id,
-    });
-  });
-
-  return Array.from(byKey.values()).sort((a, b) =>
+  // Only return stored default items - do NOT auto-add custom items from invoices
+  return [...storedItems].sort((a, b) =>
     a.description.localeCompare(b.description)
   );
 };

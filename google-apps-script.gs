@@ -2,7 +2,7 @@
 // Sheet columns:
 // A InvoiceID, B Customer, C Phone, D Date, E Type, F Items,
 // G Subtotal, H Tax, I Total, J Status, K CreatedAt, L Payment Method,
-// M DiscountType, N DiscountValue, O DiscountAmount, P TaxableBase
+// M DiscountType, N DiscountValue, O DiscountAmount, P TaxableBase, Q Notes
 
 const SHEET_ID = '1uIGqqdHJ3eZabPCFYfwwZIVaGnq1NHlI2B8LbciWtxY';
 const SHEET_NAME = 'Invoices';

@@ -12,6 +12,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { InvoiceItemRow } from "./InvoiceItemRow";
+import { CustomerSearchSelect } from "./CustomerSearchSelect";
 import {
   ArrowLeft,
   CalendarDays,
@@ -284,24 +285,10 @@ export const InvoiceForm = ({
             <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-2">
               <div>
                 <Label>Existing customer</Label>
-                <Select value="" onValueChange={selectCustomer}>
-                  <SelectTrigger className="mt-1 h-11 rounded-xl">
-                    <SelectValue placeholder="New / walk-in customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.length === 0 ? (
-                      <SelectItem value="no-customers" disabled>
-                        No customers saved
-                      </SelectItem>
-                    ) : (
-                      customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.phoneNumber}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <CustomerSearchSelect
+                  customers={customers}
+                  onSelect={selectCustomer}
+                />
               </div>
               <div>
                 <Label htmlFor="customerName">Customer name *</Label>

@@ -55,6 +55,7 @@ export const InvoiceForm = ({
   const [discountType, setDiscountType] = useState<DiscountType>(DEFAULT_DISCOUNT_TYPE);
   const [discountValue, setDiscountValue] = useState<number>(DEFAULT_DISCOUNT_VALUE);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState("");
   const isEditing = Boolean(editingInvoice);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +67,7 @@ export const InvoiceForm = ({
       setItems([createBlankInvoiceItem("1")]);
       setDiscountType(DEFAULT_DISCOUNT_TYPE);
       setDiscountValue(DEFAULT_DISCOUNT_VALUE);
+      setNotes("");
       return;
     }
 
@@ -83,6 +85,7 @@ export const InvoiceForm = ({
         ? editingInvoice.discountValue
         : DEFAULT_DISCOUNT_VALUE
     );
+    setNotes(String(editingInvoice.notes || ""));
   }, [editingInvoice]);
 
   useEffect(() => {
@@ -154,6 +157,7 @@ export const InvoiceForm = ({
       total,
       status: editingInvoice?.status || "pending",
       paymentMethod: editingInvoice?.paymentMethod,
+      notes: notes.trim() || undefined,
     };
 
     try {
@@ -169,6 +173,7 @@ export const InvoiceForm = ({
         setItems([createBlankInvoiceItem("1")]);
         setDiscountType(DEFAULT_DISCOUNT_TYPE);
         setDiscountValue(DEFAULT_DISCOUNT_VALUE);
+        setNotes("");
       } else {
         showToast(
           result.error || (isEditing ? "Failed to update invoice" : "Failed to save invoice"),
@@ -209,6 +214,7 @@ export const InvoiceForm = ({
     setItems([createBlankInvoiceItem("1")]);
     setDiscountType(DEFAULT_DISCOUNT_TYPE);
     setDiscountValue(DEFAULT_DISCOUNT_VALUE);
+    setNotes("");
   };
 
   return (
@@ -386,7 +392,17 @@ export const InvoiceForm = ({
                 </p>
               </div>
             </div>
-            <div className="p-5">
+            <div className="p-5 space-y-4">
+              <div>
+                <Label htmlFor="notes">Invoice Notes</Label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Enter custom notes or payment details for this invoice..."
+                  className="mt-1 flex min-h-[100px] w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                />
+              </div>
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                 Saved invoice data remains customer, date, items, tax and total.
               </div>

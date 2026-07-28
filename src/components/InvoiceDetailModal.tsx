@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Download, Pencil, Printer, Share2, User, X } from "lucide-react";
+import { Download, NotebookPen, Pencil, Printer, Share2, User, X } from "lucide-react";
 import { formatDateTime } from "../utils/date";
 import { createPdfBlob, savePdf } from "../utils/pdf";
 import { useInvoicePrint } from "../hooks/useInvoicePrint";
@@ -141,6 +141,9 @@ export const InvoiceDetailModal = ({
             <CustomerInfo invoice={invoice} />
             <InvoiceItemsTable invoice={invoice} />
             <InvoiceTotals invoice={invoice} />
+            {invoice.notes && invoice.notes.trim() && (
+              <InvoiceNotes notes={invoice.notes} />
+            )}
             <InvoiceActions
               invoice={invoice}
               paymentMethod={paymentMethod}
@@ -228,6 +231,20 @@ const CustomerInfo = ({ invoice }: { invoice: Invoice }) => (
     <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 md:grid-cols-2">
       <InfoBlock label="Name" value={invoice.customerName} />
       <InfoBlock label="Phone" value={invoice.phoneNumber} />
+    </div>
+  </div>
+);
+
+const InvoiceNotes = ({ notes }: { notes: string }) => (
+  <div className="relative z-10 space-y-2">
+    <h3 className="flex items-center gap-2 font-semibold text-gray-950">
+      <NotebookPen className="w-4 h-4" />
+      Notes
+    </h3>
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <p className="whitespace-pre-wrap break-words text-sm text-gray-800">
+        {notes}
+      </p>
     </div>
   </div>
 );

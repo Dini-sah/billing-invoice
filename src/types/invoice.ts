@@ -27,6 +27,7 @@ export interface Invoice {
   taxTotal: number;
   total: number;
   status: 'pending' | 'paid';
+  notes?: string;
 }
 
 export interface InvoiceFilters {

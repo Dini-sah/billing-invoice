@@ -208,6 +208,18 @@ export const PrintableInvoice = ({
             <span>{formatCurrency(invoice.total)}</span>
           </div>
         </div>
+
+        {invoice.notes && invoice.notes.trim() && (
+          <div className="invoice-print-notes" style={{ marginTop: "18px" }}>
+            <h2 className="invoice-print-section">Notes</h2>
+            <div
+              className="invoice-print-box"
+              style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+            >
+              {invoice.notes}
+            </div>
+          </div>
+        )}
       </section>
     </main>
   </div>

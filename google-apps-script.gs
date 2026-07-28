@@ -26,7 +26,8 @@ const COL = {
   discountType: 13,
   discountValue: 14,
   discountAmount: 15,
-  taxableBase: 16
+  taxableBase: 16,
+  notes: 17
 };
 
 const CASHBOOK_COL = {
@@ -207,7 +208,8 @@ function doPost(e) {
         invoice.discountType || 'flat',
         Number(invoice.discountValue || 0),
         Number(invoice.discountAmount || 0),
-        Number(invoice.taxableBase || invoice.subtotal || 0)
+        Number(invoice.taxableBase || invoice.subtotal || 0),
+        invoice.notes || ''
       ]);
 
       return jsonResponse_({ success: true });
@@ -254,7 +256,7 @@ function doPost(e) {
         return jsonResponse_({ success: false, error: 'Invoice not found: ' + updatedInvoiceId });
       }
 
-      updateSheet.getRange(updateRowNumber, 1, 1, COL.taxableBase).setValues([[
+      updateSheet.getRange(updateRowNumber, 1, 1, COL.notes).setValues([[
         updatedInvoice.id || '',
         updatedInvoice.customerName || '',
         updatedInvoice.phoneNumber || '',
@@ -270,7 +272,8 @@ function doPost(e) {
         updatedInvoice.discountType || 'flat',
         Number(updatedInvoice.discountValue || 0),
         Number(updatedInvoice.discountAmount || 0),
-        Number(updatedInvoice.taxableBase || updatedInvoice.subtotal || 0)
+        Number(updatedInvoice.taxableBase || updatedInvoice.subtotal || 0),
+        updatedInvoice.notes || ''
       ]]);
 
       return jsonResponse_({
@@ -471,7 +474,8 @@ function doGet(e) {
           discountType: String(row[COL.discountType - 1] || 'flat'),
           discountValue: Number(row[COL.discountValue - 1] || 0),
           discountAmount: Number(row[COL.discountAmount - 1] || 0),
-          taxableBase: Number(row[COL.taxableBase - 1] || row[COL.subtotal - 1] || 0)
+          taxableBase: Number(row[COL.taxableBase - 1] || row[COL.subtotal - 1] || 0),
+          notes: String(row[COL.notes - 1] || '')
         };
       });
 
